@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BRonk — POC</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #14121a;
+        /* Comic Sans de propósito: faz parte do estilo tosco (ver docs/DECISIONS.md). */
+        font-family: 'Comic Sans MS', 'Comic Neue', 'Segoe Print', 'Chalkboard SE', cursive;
+        color: #e8e4da;
+      }
+      #game {
+        display: block;
+        width: 100%;
+        height: 100%;
+        /* O render interno é minúsculo; o upscale serrilhado é o visual do jogo. */
+        image-rendering: pixelated;
+      }
+      /* Camada da HUD da run: o conteúdo e o estilo nascem em src/ui/hud.ts
+         (mesmo padrão dos overlays). Aqui só a camada em si. */
+      #hud {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+      }
+      #hud[hidden] {
+        display: none;
+      }
+      #death-overlay {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        background: rgba(10, 8, 14, 0.78);
+        text-align: center;
+      }
+      #death-overlay[hidden] {
+        display: none;
+      }
+      #death-overlay h1 {
+        margin: 0;
+        font-size: 52px;
+        color: #ff6b6b;
+        transform: rotate(-3deg);
+        text-shadow: 3px 3px 0 #2a1016;
+      }
+      #death-stats {
+        font-size: 18px;
+        /* O overlay escreve em 2 linhas (stats da run + bananas pro cofre). */
+        white-space: pre-line;
+      }
+      .death-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 16px;
+      }
+      #restart-btn,
+      #menu-btn {
+        font: inherit;
+        font-size: 18px;
+        padding: 10px 28px;
+        border-radius: 8px;
+        background: #2a2433;
+        cursor: pointer;
+      }
+      /* "Jogar de novo" é a ação principal (amarelo); o menu é a secundária (neutra). */
+      #restart-btn {
+        border: 2px solid #ffe066;
+        color: #ffe066;
+        transform: rotate(1.5deg);
+      }
+      #menu-btn {
+        border: 2px solid rgba(255, 255, 255, 0.45);
+        color: #e8e4da;
+        transform: rotate(-1.2deg);
+      }
+      #menu-btn[hidden] {
+        display: none;
+      }
+      #restart-btn:hover,
+      #menu-btn:hover {
+        background: #3a3145;
+      }
+      #restart-btn:focus-visible,
+      #menu-btn:focus-visible {
+        outline: 3px dashed #ffe066;
+        outline-offset: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <div id="hud">carregando…</div>
+    <div id="death-overlay" hidden>
+      <h1>Fim da run</h1>
+      <div id="death-stats"></div>
+      <div class="death-actions">
+        <!-- Rótulos do GDD/DECISIONS 2026-11-17; os ids são contrato do harness. -->
+        <button id="restart-btn" type="button">Jogar de novo</button>
+        <button id="menu-btn" type="button">Menu</button>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
