@@ -1,6 +1,6 @@
 import type { World } from '../sim/world';
 import type { AchievementDef } from '../data/achievements';
-import { el, injectStyleOnce } from './screens/screenTheme';
+import { el, injectScreenThemeOnce, injectStyleOnce, SB_CHAMFER } from './screens/screenTheme';
 import { formatRunTime } from './hud';
 
 /** O que o fim de run anuncia além dos números do world (vem do recordRun). */
@@ -53,7 +53,9 @@ export function createDeathOverlay(onRestart: () => void, onBackToMenu?: () => v
     },
     show(world: World, closeout?: RunCloseout): void {
       visible = true;
-      injectStyleOnce('death-stats-style', DEATH_STATS_CSS);
+      // O tema traz o keyframes sb-slide-in e o bloco de reduced-motion.
+      injectScreenThemeOnce();
+      injectStyleOnce('death-overlay-style', DEATH_OVERLAY_CSS);
 
       let cardsEarned = 0;
       for (const n of world.cardsEarned) cardsEarned += n;
@@ -117,8 +119,59 @@ export function createDeathOverlay(onRestart: () => void, onBackToMenu?: () => v
   };
 }
 
-/** Tabela de fim de run: rótulo à esquerda, número tabular à direita. */
-const DEATH_STATS_CSS = `
+/**
+ * Visual do fim de run (tema "placar esportivo BR", 2026-11-26): o CSS do
+ * overlay saiu do index.html para cá — o index guarda só a casca e os ids do
+ * contrato do harness. O título vira letreiro "FIM DE JOGO" e a tabela vira a
+ * SÚMULA DA PARTIDA (linhas zebradas, números tabulares à direita).
+ */
+const DEATH_OVERLAY_CSS = `
+#death-overlay h1 {
+  margin: 0;
+  position: relative;
+  padding: 10px 30px 12px;
+  font-size: clamp(32px, 6vw, 52px);
+  font-weight: 700;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-edge);
+  border-left: 6px solid var(--ui-danger);
+  clip-path: ${SB_CHAMFER};
+  animation: sb-slide-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+#death-overlay h1::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: var(--ui-stripe);
+  pointer-events: none;
+}
+
+/* Súmula: painel de placar com a tabela zebrada dentro. */
+#death-stats {
+  position: relative;
+  padding: 16px 8px 14px;
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-edge);
+  border-left: 5px solid var(--ui-yellow);
+  clip-path: ${SB_CHAMFER};
+}
+#death-stats::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: var(--ui-stripe);
+  pointer-events: none;
+}
 .death-table {
   margin: 0 auto;
   border-collapse: collapse;
@@ -126,15 +179,14 @@ const DEATH_STATS_CSS = `
 }
 .death-table th,
 .death-table td {
-  padding: 5px 10px;
-  border-bottom: 2px dashed rgba(255, 255, 255, 0.18);
+  padding: 6px 12px;
   font-size: 16px;
 }
-.death-table tr:last-child th,
-.death-table tr:last-child td { border-bottom: none; }
-.death-table th { font-weight: normal; opacity: 0.9; }
+/* Zebra de tabela de classificação (sem bordas tracejadas do tema velho). */
+.death-table tr:nth-child(even) { background: var(--ui-panel-2); }
+.death-table th { font-weight: 500; color: var(--ui-text-dim); }
 .death-table td {
-  font-weight: bold;
+  font-weight: 700;
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -143,9 +195,40 @@ const DEATH_STATS_CSS = `
   margin: 14px auto 0;
   padding: 10px 14px 0;
   list-style: none;
-  border-top: 2px dashed rgba(255, 255, 255, 0.25);
+  border-top: 1px solid var(--ui-edge);
   font-size: 15px;
   text-align: center;
 }
 .death-achievements li { margin-top: 4px; }
+
+/* Botões: "Jogar de novo" é a ação principal (barra verde); "Menu" neutra.
+   Rótulos e ids são contrato (DECISIONS 2026-11-17 + harness). */
+#restart-btn,
+#menu-btn {
+  font: inherit;
+  font-size: 18px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 28px;
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-edge);
+  clip-path: ${SB_CHAMFER};
+  cursor: pointer;
+}
+#restart-btn { border-left: 5px solid var(--ui-green); }
+#menu-btn { border-left: 5px solid var(--ui-edge); }
+#restart-btn:hover,
+#menu-btn:hover {
+  background: var(--ui-panel-hover);
+  border-left-width: 8px;
+}
+/* Foco: anel interno (outline morre no clip-path — regra da casa). */
+#restart-btn:focus-visible,
+#menu-btn:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 3px var(--ui-focus);
+  background: var(--ui-panel-hover);
+}
 `;

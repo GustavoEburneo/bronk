@@ -14,6 +14,8 @@ import type { PlayerView } from './playerView';
 import { createPlayerView } from './playerView';
 import type { DamageNumbers } from './damageNumbers';
 import { createDamageNumbers } from './damageNumbers';
+import type { HitSparks } from './hitSparks';
+import { createHitSparks } from './hitSparks';
 import type { OrelhaoView } from './orelhaoView';
 import { createOrelhaoView } from './orelhaoView';
 import type { FollowCamera } from './followCamera';
@@ -22,6 +24,11 @@ import type { CameraLook } from '../app/mouseLook';
 import { createSky, skyForMap } from './sky';
 import { setSnapResolution } from './retro';
 import { setCrudeTextureAnisotropy } from './jankTextures';
+
+/** Janela do screen shake de dano sofrido, em ticks (~0,23 s a 60 Hz). */
+const SHAKE_TICKS = 14;
+/** Deslocamento máximo da câmera no tranco (u). */
+const SHAKE_AMPLITUDE = 0.16;
 
 export interface RendererOptions {
   /**
@@ -69,6 +76,8 @@ interface MatchScene {
   sky: THREE.Group;
   /** Números de dano + vinheta (camada DOM; removida no endMatch). */
   damage: DamageNumbers;
+  /** Faíscas de hit + explosão/anel de morte (partículas instanciadas). */
+  sparks: HitSparks;
   /** Orelhões (aparelho na cena + rótulo DOM de requisito). */
   orelhoes: OrelhaoView;
   followCamera: FollowCamera;
@@ -184,6 +193,9 @@ export function createRenderer(canvas: HTMLCanvasElement, options: RendererOptio
     const orelhoes = createOrelhaoView(data.orelhoes.killRequirements.length, ground);
     root.add(orelhoes.group);
 
+    const sparks = createHitSparks(ground);
+    for (const sparkMesh of sparks.meshes) root.add(sparkMesh);
+
     match = {
       root,
       enemies,
@@ -193,6 +205,7 @@ export function createRenderer(canvas: HTMLCanvasElement, options: RendererOptio
       ground,
       sky,
       damage: createDamageNumbers(ground),
+      sparks,
       orelhoes,
       followCamera,
     };
@@ -227,6 +240,7 @@ export function createRenderer(canvas: HTMLCanvasElement, options: RendererOptio
       match.enemies.update(world, alpha);
       match.orbs.update(world, alpha);
       match.cards?.update(world, alpha, frameDt);
+      match.sparks.update(world, frameDt);
       match.followCamera.update(
         match.player.group.position.x,
         // Altura do CHÃO sob o player (sem o pulo: a câmera não quica junto).
@@ -236,6 +250,20 @@ export function createRenderer(canvas: HTMLCanvasElement, options: RendererOptio
         options.cameraLook.pitch,
         frameDt,
       );
+      // Screen shake ao SOFRER dano (2026-11-26): tranco translacional curto
+      // DEPOIS do followCamera (lookAt já orientou a câmera; deslocar a posição
+      // agora não re-mira). Deriva do estado da sim (lastHitTick/time): congela
+      // com a pausa e re-ancora sozinho no restart. Decai quadrático na mesma
+      // janela curta; fases dessincronizadas evitam vaivém diagonal uniforme.
+      const sinceHit = world.tickCount - world.player.lastHitTick;
+      if (world.player.lastHitTick >= 0 && sinceHit < SHAKE_TICKS) {
+        const decay = 1 - sinceHit / SHAKE_TICKS;
+        const strength = SHAKE_AMPLITUDE * decay * decay;
+        const t = world.time * 66;
+        camera.position.x += Math.sin(t * 1.1) * strength;
+        camera.position.y += Math.sin(t * 1.7 + 1.3) * strength * 0.7;
+        camera.position.z += Math.cos(t * 1.3 + 2.1) * strength;
+      }
       // O céu segue a câmera no plano: o domo (raio 150 < far 400) envolve a
       // vista em qualquer canto do mapa, de qualquer tamanho de arena.
       match.sky.position.set(camera.position.x, 0, camera.position.z);

@@ -31,6 +31,22 @@ const MAX_PITCH = 1.3;
 const INITIAL_PITCH = 0.4;
 
 /**
+ * Eventos de mousemove DESCARTADOS logo após adquirir o pointer lock: o
+ * Chromium entrega o primeiro movement* com o salto do cursor do sistema até
+ * o centro da tela (centenas/milhares de px), e a câmera dava um giro violento
+ * a cada clique que travava o ponteiro (início de partida, fechar panfleto,
+ * Continuar da pausa). Dois eventos cobrem o navegador que emite o espúrio no
+ * frame seguinte ao pointerlockchange.
+ */
+const SUPPRESS_EVENTS_AFTER_LOCK = 2;
+/**
+ * Teto de |movementX/Y| por evento (px). Flick legítimo coalescido a ~60 Hz
+ * fica bem abaixo disso; só os picos espúrios do navegador (lock, engasgo de
+ * frame) passam de 500 — descartar o evento inteiro evita o giro fantasma.
+ */
+const MAX_EVENT_DELTA = 500;
+
+/**
  * Mouse → yaw/pitch da câmera via Pointer Lock: clique no canvas captura o
  * ponteiro, Esc solta (comportamento do navegador). Sem captura, mover o
  * mouse não gira a câmera.
@@ -39,6 +55,14 @@ export function createMouseLook(canvas: HTMLCanvasElement): MouseLook {
   let yaw = 0;
   let pitch = INITIAL_PITCH;
   let sensitivity = BASE_SENSITIVITY;
+  /** Eventos ainda a descartar após o último lock (ver SUPPRESS_EVENTS_AFTER_LOCK). */
+  let suppressEvents = 0;
+
+  const onPointerLockChange = (): void => {
+    // Vale para QUALQUER caminho de lock (clique no canvas, mouseLook.lock()
+    // dos overlays): o primeiro movement* pós-lock é suspeito em todos.
+    if (document.pointerLockElement === canvas) suppressEvents = SUPPRESS_EVENTS_AFTER_LOCK;
+  };
 
   const onClick = (): void => {
     if (document.pointerLockElement === canvas) return;
@@ -53,6 +77,15 @@ export function createMouseLook(canvas: HTMLCanvasElement): MouseLook {
 
   const onMouseMove = (event: MouseEvent): void => {
     if (document.pointerLockElement !== canvas) return;
+    if (suppressEvents > 0) {
+      suppressEvents--;
+      return;
+    }
+    // Pico espúrio fora da janela do lock (engasgo de frame): descarta o
+    // evento inteiro — aplicar só um eixo torceria a direção do giro.
+    if (Math.abs(event.movementX) > MAX_EVENT_DELTA || Math.abs(event.movementY) > MAX_EVENT_DELTA) {
+      return;
+    }
     yaw -= event.movementX * sensitivity;
     // Vertical invertida: mouse para cima abaixa a câmera, mirando o céu.
     pitch += event.movementY * sensitivity;
@@ -62,6 +95,7 @@ export function createMouseLook(canvas: HTMLCanvasElement): MouseLook {
 
   canvas.addEventListener('click', onClick);
   document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('pointerlockchange', onPointerLockChange);
 
   return {
     get yaw(): number {
@@ -83,6 +117,7 @@ export function createMouseLook(canvas: HTMLCanvasElement): MouseLook {
     dispose(): void {
       canvas.removeEventListener('click', onClick);
       document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('pointerlockchange', onPointerLockChange);
     },
   };
 }

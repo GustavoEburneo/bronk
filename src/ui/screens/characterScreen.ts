@@ -8,6 +8,8 @@ import {
   hasModifier,
   swallowEnterRepeat,
   INPUT_GUARD_MS,
+  MEDIA_COMPACT,
+  SB_CHAMFER,
 } from './screenTheme';
 
 /**
@@ -61,7 +63,7 @@ export function createCharacterScreen(
   backButton.textContent = '← Voltar (Esc)';
   backButton.addEventListener('click', () => callbacks.onBack());
 
-  const title = el('h1', 'screen-title', 'Escolha o personagem');
+  const title = el('h1', 'screen-title', 'Escalação');
   const hint = el(
     'p',
     'screen-hint',
@@ -115,7 +117,7 @@ export function createCharacterScreen(
     // O card virou imagem: o nome entra pelo rótulo acessível.
     card.setAttribute('aria-label', `${def.name} — ver ficha`);
 
-    const stamp = el('span', 'card-chosen', 'ESTE!');
+    const stamp = el('span', 'card-chosen', 'TITULAR!');
     stamp.hidden = true;
 
     const portrait = document.createElement('canvas');
@@ -230,11 +232,12 @@ const CHARACTER_CSS = `
   width: 100%;
   aspect-ratio: 1;
   image-rendering: pixelated;
-  border: 2px solid rgba(0, 0, 0, 0.35);
-  background: #fffbe6;
+  border: 2px solid var(--ui-edge);
+  background: var(--ui-led-bg); /* canvas vazio (fallback sem 2d) fica "visor apagado" */
 }
 
-/* Ficha lateral: panfleto rosa, caligrafia da casa. */
+/* Ficha técnica do jogador: painel de placar (receita do tema — chanfro +
+   barra de acento + fita BR no ::before). Peça ESTÁTICA: pode drop-shadow. */
 .char-panel {
   position: relative;
   display: flex;
@@ -243,28 +246,26 @@ const CHARACTER_CSS = `
   gap: 10px;
   width: clamp(240px, 30vw, 310px);
   min-height: 330px;
-  padding: 22px 18px 20px;
-  background: var(--ui-paper-1);
-  color: var(--ui-ink);
+  padding: 24px 18px 20px; /* topo maior: a fita BR ocupa 6px */
+  background: var(--ui-panel);
+  color: var(--ui-text);
   text-align: center;
-  border: 2px solid rgba(0, 0, 0, 0.35);
-  border-radius: 2px;
-  box-shadow: 4px 6px 0 rgba(0, 0, 0, 0.45);
-  transform: rotate(1.2deg);
+  border: 1px solid var(--ui-edge);
+  border-left: 5px solid var(--ui-yellow);
+  clip-path: ${SB_CHAMFER};
+  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.4));
 }
-.char-panel::before { /* grampo, como nos demais panfletos */
+.char-panel::before { /* fita BR no topo (ex-grampo) */
   content: '';
   position: absolute;
-  top: -5px;
-  left: 50%;
-  width: 26px;
-  height: 8px;
-  background: var(--ui-staple);
-  border: 1px solid rgba(0, 0, 0, 0.5);
-  border-radius: 2px;
-  transform: translateX(-50%) rotate(-2deg);
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: var(--ui-stripe);
+  pointer-events: none;
 }
-.char-panel-empty { margin: auto 0; font-size: 15px; opacity: 0.8; max-width: 220px; }
+.char-panel-empty { margin: auto 0; font-size: 15px; color: var(--ui-text-dim); max-width: 220px; }
 .char-panel-empty[hidden] { display: none; }
 .char-panel-body {
   display: flex;
@@ -275,27 +276,35 @@ const CHARACTER_CSS = `
   align-self: stretch;
 }
 .char-panel-body[hidden] { display: none; }
+/* Retrato emoldurado, reto: a fita BR do painel já faz a faixa em cima. */
 .char-panel-portrait {
   width: 128px;
   height: 128px;
   image-rendering: pixelated;
-  border: 2px solid rgba(0, 0, 0, 0.35);
-  transform: rotate(-2deg);
-  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.35);
+  border: 2px solid var(--ui-edge);
+  background: var(--ui-led-bg);
 }
-.char-panel-name { margin: 0; font-size: 26px; line-height: 1.1; }
-.char-panel-ability { margin: 0; font-size: 15px; font-weight: bold; }
+.char-panel-name {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.1;
+}
+.char-panel-ability { margin: 0; font-size: 15px; font-weight: 700; }
 .char-panel-desc {
   margin: 0;
   padding-top: 8px;
-  border-top: 2px dashed rgba(0, 0, 0, 0.35);
+  border-top: 1px solid var(--ui-edge);
   align-self: stretch;
   font-size: 14px;
   line-height: 1.3;
+  color: var(--ui-text-dim);
 }
 .char-confirm { margin-top: auto; }
 
-@media (max-width: 640px), (max-height: 560px) {
+@media ${MEDIA_COMPACT} {
   .char-layout { gap: var(--ui-gap); }
   #screens .char-card { width: clamp(96px, 26vw, 130px); padding: 10px 8px 6px; }
   .char-panel { width: min(420px, 92vw); min-height: 0; }

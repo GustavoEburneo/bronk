@@ -36,11 +36,12 @@ abaixo. *(decidido em 2026-11-16; substitui o level-up provisório da POC, que d
 ## Escolha de melhorias: "Panfleto na Esquina" *(decidido em 2026-11-16)*
 
 **O que o jogador faz:** ao subir de nível, a simulação **pausa totalmente** (o render continua).
-Uma mão entra pela lateral da tela e estende **3 panfletos** de papel mal diagramado — Comic Sans,
-clip-arts toscos, "PROMOÇÃO!!!" — cada um com o nome da melhoria e o efeito em uma linha. Clique ou
+Sobem **3 cartas de contratação** estilo figurinha de Copa — tarjas "CONTRATAÇÃO!/REFORÇO!/GOLAÇO!",
+moldura clara, painel de placar (visual da repaginação 2026-11-26; o nome da mecânica segue
+"Panfleto na Esquina") — cada uma com o nome da melhoria e o efeito em uma linha. Clique ou
 teclas 1/2/3 escolhem; o jogo retoma. **O que ganha:** a melhoria escolhida, empilhável até um teto.
-**Por que repete:** cada tela é uma decisão de build sob as opções sorteadas, com um reroll para
-apostar. O humor está no objeto (o panfleto feio), conforme as diretrizes de tema.
+**Por que repete:** cada tela é uma decisão de build sob as opções sorteadas, com um reroll
+("pedir substituição") para apostar. O humor está no jargão de mercado da bola, conforme o tema.
 
 Regras:
 
@@ -186,9 +187,9 @@ pré-requisito para testar a mecânica.
 ## Fluxo de telas e estrutura de partida *(novo em 2026-11-17; fluxo: decidido)*
 
 Fluxo: **início → seleção de personagem → seleção de mapa → jogo**. Substitui o comportamento da
-POC de abrir direto na partida (que sai). As três telas seguem o estilo tosco decidido no
-DECISIONS: fundo com textura de papel, Comic Sans, cards que parecem panfletos grampeados num
-poste. Navegação por clique ou teclado (dígitos selecionam + Enter confirma; a tela de início usa
+POC de abrir direto na partida (que sai). As três telas seguem o tema de UI vigente
+(DECISIONS 2026-11-26, "placar esportivo BR"): fundo de estádio à noite, Barlow Condensed em
+caixa alta, cards como painéis de placar chanfrados com a fita diagonal verde/amarelo/azul. Navegação por clique ou teclado (dígitos selecionam + Enter confirma; a tela de início usa
 1–4, as demais 1/2/3); Esc volta uma tela (sem efeito na tela de início, que é a primeira). Sem
 persistência de escolha entre sessões na v1 (sempre começa na tela de início).
 

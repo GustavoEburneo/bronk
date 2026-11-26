@@ -1,19 +1,29 @@
 import type { World } from '../sim/world';
 import type { Perf } from '../app/perf';
 import type { AbilityDef } from '../data/characters';
-import { el, injectStyleOnce } from './screens/screenTheme';
+import {
+  el,
+  injectScreenThemeOnce,
+  injectStyleOnce,
+  MEDIA_COMPACT,
+  SB_CHAMFER,
+} from './screens/screenTheme';
 
 /**
- * HUD da run no estilo "papel de rua" das telas (ver screenTheme): crachá de
- * papel com vida e XP, relógio de ponto, carta da habilidade com a recarga e
- * adesivos das passivas coladas. DOM por cima do canvas: texto nítido mesmo
- * com o render interno em 270p. O `#hud` do index.html é só a camada
- * (fixed + pointer-events none); todo o resto nasce aqui, como nos overlays.
+ * HUD da run no tema "placar esportivo BR" (2026-11-26, ver screenTheme):
+ * lower third do jogador com vida e XP, cronômetro de partida em visor LED,
+ * escudo da habilidade com a recarga e escudinhos das passivas. DOM por cima
+ * do canvas: texto nítido independente da resolução do render. O `#hud` do
+ * index.html é só a camada (fixed + pointer-events none); todo o resto nasce
+ * aqui, como nos overlays.
+ *
+ * Os painéis da HUD NÃO usam drop-shadow (regra da casa do screenTheme: o
+ * filter re-rasteriza a cada repaint, e as barras repintam POR FRAME).
  *
  * Duas cadências de atualização:
  * - POR FRAME, só transforms (barras e véu de recarga): sem layout, cabe no
  *   orçamento, e a recarga a 5 Hz ficaria aos trancos.
- * - ~5 Hz (throttle abaixo), textos e reconciliação dos adesivos: números
+ * - ~5 Hz (throttle abaixo), textos e reconciliação dos escudinhos: números
  *   legíveis e sem custo de DOM por frame.
  */
 
@@ -38,6 +48,8 @@ export const ABILITY_DISPLAY: Record<AbilityDef['kind'], { icon: string; label: 
 };
 
 export function createHud(element: HTMLElement): Hud {
+  // Tokens vêm do :root (main injeta); o tema traz o bloco de reduced-motion.
+  injectScreenThemeOnce();
   injectStyleOnce('hud-style', HUD_CSS);
 
   // Camada: limpa o "carregando…" do index.html e monta a estrutura uma vez.
@@ -197,52 +209,44 @@ export function formatRunTime(seconds: number): string {
 }
 
 /**
- * Estilo da HUD. Variáveis no topo como nos overlays: os valores espelham a
- * paleta das telas (unificar num :root é dívida registrada no upgradeOverlay).
+ * Estilo da HUD (cores vêm dos tokens em :root — src/theme/tokens.ts). A
+ * receita do painel é a do .sb-panel do tema, recriada aqui SEM drop-shadow:
+ * as barras repintam por frame e o filter re-rasterizaria o painel todo.
  */
 const HUD_CSS = `
 #hud {
-  --ui-ink: #26180b;
-  --ui-paper-0: #fff3b0;
-  --ui-paper-1: #ffd6ec;
-  --ui-paper-2: #d2f4ff;
-  --ui-promo: #e8231a;
-  --ui-promo-ink: #fffbe6;
-  --ui-accent: #ffe066;
-  --ui-staple: #b9b9b9;
-  --hud-hp: #4f9440;
   --hud-margin: 12px;
+  font-weight: 500;
 }
 
-/* Papel grampeado, mesma linguagem dos cards das telas (posição fica em cada peça). */
+/* Painel de placar da HUD (mesma linguagem dos .sb-panel, sem sombra). */
 #hud .hud-paper {
-  padding: 8px 12px;
-  color: var(--ui-ink);
-  background: var(--ui-paper-0);
-  border: 2px solid rgba(0, 0, 0, 0.35);
-  border-radius: 2px;
-  box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.45);
+  position: relative;
+  padding: 12px 12px 8px; /* topo maior: a fita BR ocupa 4px */
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-edge);
+  border-left: 4px solid var(--ui-yellow);
+  clip-path: ${SB_CHAMFER};
 }
-#hud .hud-paper::before { /* grampo no topo */
+#hud .hud-paper::before { /* fita BR no topo (ex-grampo) */
   content: '';
   position: absolute;
-  top: -5px;
-  left: 50%;
-  width: 22px;
-  height: 7px;
-  background: var(--ui-staple);
-  border: 1px solid rgba(0, 0, 0, 0.5);
-  border-radius: 2px;
-  transform: translateX(-50%) rotate(-2deg);
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--ui-stripe);
+  pointer-events: none;
 }
 
-/* --- Crachá do personagem (vida + XP) --- */
+/* --- Lower third do jogador (vida + XP) --- */
 #hud .hud-badge {
   position: absolute;
   top: var(--hud-margin);
   left: var(--hud-margin);
   width: 220px;
-  transform: rotate(-1.5deg);
+  border-left-color: var(--ui-green);
 }
 .hud-name-row {
   display: flex;
@@ -251,22 +255,27 @@ const HUD_CSS = `
   margin-bottom: 6px;
   text-align: left;
 }
-.hud-char { font-size: 17px; font-weight: bold; line-height: 1.1; }
-.hud-map { font-size: 12px; opacity: 0.75; }
+.hud-char {
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+}
+.hud-map { font-size: 12px; color: var(--ui-text-dim); text-transform: uppercase; }
 
 .hud-bar {
   position: relative;
   height: 18px;
   margin-top: 4px;
-  background: rgba(0, 0, 0, 0.22);
-  border: 2px solid rgba(0, 0, 0, 0.4);
-  border-radius: 3px;
+  background: var(--ui-led-bg);
+  border: 1px solid var(--ui-edge);
   overflow: hidden;
 }
 .hud-bar-fill {
   position: absolute;
   inset: 0;
-  background: var(--hud-hp);
+  background: var(--ui-green);
   transform-origin: left center;
   transform: scaleX(1);
 }
@@ -276,58 +285,69 @@ const HUD_CSS = `
   display: grid;
   place-items: center;
   font-size: 12px;
-  font-weight: bold;
-  color: var(--ui-promo-ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-text);
   text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.55);
   white-space: nowrap;
 }
+/* Vida baixa: cartão vermelho pulsando (steps: estética de placar, não fade). */
 .hud-hp.low .hud-bar-fill {
-  background: var(--ui-promo);
+  background: var(--ui-danger);
   animation: hud-hp-pulse 0.8s steps(2) infinite;
 }
 @keyframes hud-hp-pulse {
   50% { filter: brightness(1.45); }
 }
 .hud-xp { height: 12px; }
-.hud-xp .hud-bar-fill { background: var(--ui-accent); }
+.hud-xp .hud-bar-fill { background: var(--ui-yellow); }
 .hud-xp .hud-bar-text { font-size: 10px; }
 
-/* --- Relógio da run: topo-centro, GRANDE (destaque de 2026-11-24) --- */
+/* --- Cronômetro da partida: topo-centro, visor LED (destaque de 2026-11-24).
+   min-width segura o layout se a fonte não tiver tabular-nums completo. --- */
 #hud .hud-timer {
   position: absolute;
   top: var(--hud-margin);
   left: 50%;
-  transform: translateX(-50%) rotate(-0.8deg);
-  padding: 6px 22px;
-  background: var(--ui-paper-2);
+  transform: translateX(-50%);
+  padding: 10px 22px 6px;
+  min-width: 96px;
+  background: var(--ui-led-bg);
+  color: var(--ui-led);
   font-size: 38px;
-  font-weight: bold;
+  font-weight: 700;
   line-height: 1.05;
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
 
-/* --- Contadores (vivos, bananas, figurinhas) --- */
+/* --- Mini-placar (vivos, bananas, figurinhas) --- */
 #hud .hud-clock {
   position: absolute;
   top: var(--hud-margin);
   right: var(--hud-margin);
   min-width: 92px;
-  transform: rotate(1.5deg);
-  background: var(--ui-paper-2);
+  border-left-color: var(--ui-blue);
   text-align: center;
 }
-.hud-alive { font-size: 11.5px; opacity: 0.8; white-space: nowrap; }
-/* Bananas da run (viram cofre no fim): separadas do tempo por traço de papel. */
+.hud-alive {
+  font-size: 11.5px;
+  color: var(--ui-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+/* Bananas da run (viram cofre no fim): linha separada como numa tabela. */
 .hud-bananas {
   margin-top: 3px;
   padding-top: 2px;
-  border-top: 2px dashed rgba(0, 0, 0, 0.3);
+  border-top: 1px solid var(--ui-edge);
   font-size: 14px;
-  font-weight: bold;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-/* --- Kit: carta da habilidade + adesivos das passivas --- */
+/* --- Kit: escudo da habilidade + escudinhos das passivas --- */
 .hud-kit {
   position: absolute;
   left: var(--hud-margin);
@@ -336,19 +356,33 @@ const HUD_CSS = `
   align-items: flex-end;
   gap: 12px;
 }
+/* Escudo do clube: painel com ponta de escudo embaixo (sem chanfro padrão). */
 #hud .hud-skill {
   position: relative;
   width: 64px;
-  padding: 8px 6px 5px;
-  transform: rotate(-2deg);
-  background: var(--ui-paper-1);
+  padding: 10px 6px 12px;
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-edge);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), 50% 100%, 0 calc(100% - 10px));
   text-align: center;
+}
+#hud .hud-skill::before { /* fita BR no topo */
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--ui-stripe);
+  pointer-events: none;
 }
 .hud-skill-icon { font-size: 32px; line-height: 1.15; }
 .hud-skill-label {
   font-size: 11px;
-  font-weight: bold;
-  border-top: 2px dashed rgba(0, 0, 0, 0.35);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-top: 1px solid var(--ui-edge);
   margin-top: 3px;
   padding-top: 2px;
 }
@@ -356,7 +390,7 @@ const HUD_CSS = `
 .hud-skill-cd {
   position: absolute;
   inset: 0;
-  background: rgba(16, 10, 20, 0.5);
+  background: rgba(6, 10, 16, 0.6);
   transform-origin: center bottom;
   transform: scaleY(0);
 }
@@ -368,33 +402,32 @@ const HUD_CSS = `
   gap: 7px;
   max-width: min(46vw, 420px);
 }
-/* Adesivo redondo de passiva, tortinho alternado como os papéis do mural. */
+/* Escudinho de passiva (ex-adesivo redondo): mesma ponta de escudo. */
 .hud-passive {
   position: relative;
   width: 36px;
-  height: 36px;
+  height: 40px;
   display: grid;
   place-items: center;
-  background: var(--ui-promo-ink);
-  border: 2px solid rgba(0, 0, 0, 0.35);
-  border-radius: 999px;
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+  padding-bottom: 4px;
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-edge);
+  border-top: 3px solid var(--ui-yellow);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 9px), 50% 100%, 0 calc(100% - 9px));
   animation: hud-passive-in 0.25s cubic-bezier(0.22, 1.4, 0.36, 1) both;
 }
-.hud-passives .hud-passive:nth-child(odd) { transform: rotate(-6deg); }
-.hud-passives .hud-passive:nth-child(even) { transform: rotate(5deg); }
 .hud-passive-icon { font-size: 18px; line-height: 1; }
+/* Contador de stacks: badge LED (fica FORA do clip? não — dentro do escudo). */
 .hud-passive-count {
   position: absolute;
-  top: -7px;
-  right: -8px;
-  padding: 1px 5px;
-  background: var(--ui-promo);
-  color: var(--ui-promo-ink);
+  top: 2px;
+  right: 0;
+  padding: 0 4px 1px;
+  background: var(--ui-led-bg);
+  color: var(--ui-led);
   font-size: 10px;
-  font-weight: bold;
-  border-radius: 999px;
-  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 .hud-passive-count[hidden] { display: none; }
 @keyframes hud-passive-in {
@@ -410,23 +443,20 @@ const HUD_CSS = `
   font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
   font-size: 11px;
   text-align: right;
-  color: rgba(232, 228, 218, 0.6);
+  color: var(--ui-text-dim);
   text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.6);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  #hud * { animation: none !important; }
-}
-
-/* Janela estreita ou baixa: tudo encolhe e cola mais na borda. */
-@media (max-width: 640px), (max-height: 560px) {
+/* Janela estreita ou baixa: tudo encolhe e cola mais na borda.
+   (reduced-motion vem do bloco global do screenTheme.) */
+@media ${MEDIA_COMPACT} {
   #hud { --hud-margin: 8px; }
-  #hud .hud-badge { width: 176px; padding: 6px 10px; }
+  #hud .hud-badge { width: 176px; padding: 8px 10px 6px; }
   #hud .hud-char { font-size: 14px; }
-  #hud .hud-timer { font-size: 26px; padding: 4px 14px; }
+  #hud .hud-timer { font-size: 26px; padding: 7px 14px 4px; min-width: 68px; }
   #hud .hud-skill { width: 52px; }
   #hud .hud-skill-icon { font-size: 24px; }
-  #hud .hud-passive { width: 30px; height: 30px; }
+  #hud .hud-passive { width: 30px; height: 33px; }
   #hud .hud-passive-icon { font-size: 15px; }
   #hud .hud-perf { display: none; }
 }

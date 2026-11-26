@@ -140,12 +140,19 @@ const ORELHAO_CSS = `
 .orelhao-label {
   position: absolute;
   transform: translate(-50%, -100%);
-  font-family: 'Comic Sans MS', 'Comic Sans', cursive, sans-serif;
-  font-weight: bold;
+  /* Pilha de fonte duplicada CONSCIENTEMENTE (render não importa de ui/;
+     a família é global via @fontsource no main — ver src/theme/tokens.ts e
+     index.html). */
+  font-family: 'Barlow Condensed', 'Arial Narrow', 'Liberation Sans Narrow',
+    'Helvetica Neue', sans-serif;
+  font-weight: 700; /* peso embarcado da Barlow (500/600/700 no main) */
   font-size: 14px;
   white-space: nowrap;
+  /* Cores CLARAS de propósito (legibilidade sobre o 3D): o salmão pendente e
+     o verde-claro pronto não têm token equivalente — ficam literais. */
   color: #ffb0a6;
-  -webkit-text-stroke: 3px rgba(20, 10, 4, 0.9);
+  /* Contorno escuro no tom do fundo do tema (--ui-bg-0), como o damageNumbers. */
+  -webkit-text-stroke: 3px rgba(12, 17, 24, 0.9);
   paint-order: stroke fill;
 }
 .orelhao-label.ready {
@@ -154,8 +161,9 @@ const ORELHAO_CSS = `
 }
 .orelhao-label.answered { color: #cfc8b4; }
 .orelhao-label[hidden] { display: none; }
+/* Pulso só de escala (o torto do tema antigo morreu — sem rotate decorativo). */
 @keyframes orelhao-ring {
-  50% { transform: translate(-50%, -100%) scale(1.15) rotate(-2deg); }
+  50% { transform: translate(-50%, -100%) scale(1.15); }
 }
 @media (prefers-reduced-motion: reduce) {
   .orelhao-label.ready { animation: none; }

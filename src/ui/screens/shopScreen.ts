@@ -8,6 +8,7 @@ import {
   hasModifier,
   swallowEnterRepeat,
   INPUT_GUARD_MS,
+  MEDIA_COMPACT,
   type Screen,
 } from './screenTheme';
 
@@ -42,7 +43,7 @@ export function createShopScreen(
   backButton.textContent = '← Voltar (Esc)';
   backButton.addEventListener('click', () => onBack());
 
-  const title = el('h1', 'screen-title', 'Loja de Talentos');
+  const title = el('h1', 'screen-title', 'Mercado da bola');
   const hint = el(
     'p',
     'screen-hint',
@@ -79,7 +80,7 @@ export function createShopScreen(
   parent.append(root);
 
   function renderWallet(): void {
-    wallet.textContent = `🍌 ${meta.bananas} ${meta.bananas === 1 ? 'banana' : 'bananas'} no cofre`;
+    wallet.textContent = `🍌 ${meta.bananas} no caixa do clube`;
   }
 
   /** Re-renderiza o cartaz `index` a partir do estado atual do cofre. */
@@ -92,17 +93,25 @@ export function createShopScreen(
 
     card.textContent = '';
     card.classList.toggle('maxed', maxed);
-    // "ESGOTADO" não é "EM BREVE": o cartaz segue legível, só não compra mais.
+    // "CONTRATADO" não é "PRÓXIMA RODADA": o cartaz segue legível, só não compra mais.
     card.setAttribute('aria-disabled', maxed ? 'true' : 'false');
+
+    // Pips em spans próprios: cheio e vazio com cores distintas (só decoração —
+    // o número "nível R/M" ao lado segue sendo a informação).
+    const rankLine = el('span', 'shop-rank', `nível ${rank}/${def.maxRank} `);
+    rankLine.append(
+      el('span', 'shop-pip-full', '●'.repeat(rank)),
+      el('span', 'shop-pip-empty', '○'.repeat(def.maxRank - rank)),
+    );
 
     card.append(
       el('span', 'shop-icon', def.icon),
       el('span', 'card-name', def.name),
       el('span', 'card-line', def.effectLine),
-      el('span', 'shop-rank', `nível ${rank}/${def.maxRank} ${rankPips(rank, def.maxRank)}`),
+      rankLine,
     );
     if (maxed) {
-      card.append(el('span', 'card-stamp', 'ESGOTADO'), el('span', 'card-key', 'tudo comprado'));
+      card.append(el('span', 'card-stamp', 'CONTRATADO'), el('span', 'card-key', 'craque garantido'));
     } else {
       card.append(el('span', 'card-key', `${cost} 🍌 · clique para comprar`));
     }
@@ -113,7 +122,7 @@ export function createShopScreen(
     for (let i = 0; i < talents.length; i++) renderCard(i);
   }
 
-  /** Feedback de negado — mesmo balanço dos botões "EM BREVE" do menu. */
+  /** Feedback de negado — mesmo balanço dos cards "PRÓXIMA RODADA" do mapa. */
   function deny(card: HTMLElement, message: string): void {
     status.textContent = message;
     card.classList.remove('denied');
@@ -126,7 +135,7 @@ export function createShopScreen(
     const card = cards[index]!;
     const cost = meta.nextCost(def.id);
     if (cost === null) {
-      deny(card, `"${def.name}" já está no talo — esgotou.`);
+      deny(card, `"${def.name}" já está contratado — esgotou o mercado.`);
       return;
     }
     if (!meta.buy(def.id)) {
@@ -163,25 +172,22 @@ export function createShopScreen(
   };
 }
 
-/** Pips do nível ("●●○○○"): forma além do número, legível de relance. */
-function rankPips(rank: number, maxRank: number): string {
-  return '●'.repeat(rank) + '○'.repeat(maxRank - rank);
-}
-
 const SHOP_CSS = `
+/* Carteira = visor LED do caixa do clube: o número é o dado que muda, então
+   tabular-nums segura a largura entre visitas. */
 .shop-wallet {
   margin: 0;
-  padding: 5px 18px;
-  background: var(--ui-paper-0);
-  color: var(--ui-ink);
+  padding: 6px 18px;
+  background: var(--ui-led-bg);
+  color: var(--ui-led);
+  border: 1px solid var(--ui-edge);
   font-size: 17px;
-  font-weight: bold;
-  border-radius: 4px;
-  transform: rotate(1deg);
-  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.45);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
 }
 
-/* Mais cartazes que personagens: cards menores para a feira caber na tela. */
+/* Mais cartazes que personagens: cards menores para o mercado caber na tela. */
 .shop-cards { max-width: 1200px; }
 #screens .shop-card {
   width: clamp(160px, 20vw, 215px);
@@ -189,16 +195,20 @@ const SHOP_CSS = `
   padding-top: 14px;
 }
 .shop-icon { font-size: 30px; line-height: 1.1; }
-.shop-rank { font-size: 13px; opacity: 0.85; letter-spacing: 1px; }
+.shop-rank { font-size: 13px; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+/* Pips: cheio aceso, vazio apagado — forma além do número. */
+.shop-pip-full { color: var(--ui-yellow); }
+.shop-pip-empty { color: var(--ui-text-dim); }
 
-/* Esgotado: continua legível (não é "EM BREVE"), mas sem cara de botão. */
+/* Contratado: continua legível (não é "PRÓXIMA RODADA"), mas sem cara de botão. */
 #screens .shop-card.maxed {
   cursor: not-allowed;
-  background: var(--ui-paper-locked);
-  color: var(--ui-ink-locked);
+  background: var(--ui-locked);
+  color: var(--ui-locked-text);
+  border-left-color: var(--ui-edge);
 }
 
-@media (max-width: 640px), (max-height: 560px) {
+@media ${MEDIA_COMPACT} {
   #screens .shop-card { width: clamp(140px, 40vw, 190px); min-height: 160px; }
   .shop-wallet { font-size: 14px; }
 }

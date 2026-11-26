@@ -1,7 +1,7 @@
 /**
- * Tela de Conquistas (GDD 2026-11-19): o mural de panfletos com os feitos do
- * jogador. Cartaz desbloqueado = papel vivo com carimbo "FEITO!"; trancado =
- * papel desbotado com a descrição de como ganhar e o prêmio em bananas — a
+ * Tela de Conquistas — "Sala de troféus" (GDD 2026-11-19): os feitos do
+ * jogador. Card desbloqueado = painel vivo com a flâmula "CAMPEÃO!"; trancado =
+ * painel apagado com a descrição de como ganhar e o prêmio em bananas — a
  * conquista é um CONTRATO exibido ao jogador (gamificação: meta clara, prêmio
  * claro). A tela só LÊ (`data.achievements` + MetaStore); quem desbloqueia e
  * credita é o cofre, no fim da run e na compra da loja.
@@ -13,6 +13,7 @@ import {
   injectScreenThemeOnce,
   injectStyleOnce,
   blurWithin,
+  MEDIA_COMPACT,
   type Screen,
 } from './screenTheme';
 
@@ -37,8 +38,8 @@ export function createAchievementsScreen(
   backButton.textContent = '← Voltar (Esc)';
   backButton.addEventListener('click', () => onBack());
 
-  const title = el('h1', 'screen-title', 'Conquistas');
-  // Contador de progresso: papel próprio, como a carteira da loja.
+  const title = el('h1', 'screen-title', 'Sala de troféus');
+  // Contador de progresso: visor LED próprio, como a carteira da loja.
   const counter = el('p', 'ach-counter', '');
 
   const cardsRow = el('div', 'screen-cards ach-cards', null);
@@ -70,7 +71,7 @@ export function createAchievementsScreen(
       );
       if (isUnlocked) {
         card.append(
-          el('span', 'card-chosen', 'FEITO!'),
+          el('span', 'card-chosen', 'CAMPEÃO!'),
           el('span', 'card-key', `prêmio recebido: ${def.reward} 🍌`),
         );
       } else {
@@ -96,16 +97,17 @@ export function createAchievementsScreen(
 }
 
 const ACHIEVEMENTS_CSS = `
+/* Contador = visor LED do placar ("N de M"); tabular-nums segura a largura. */
 .ach-counter {
   margin: 0;
-  padding: 5px 18px;
-  background: var(--ui-paper-0);
-  color: var(--ui-ink);
+  padding: 6px 18px;
+  background: var(--ui-led-bg);
+  color: var(--ui-led);
+  border: 1px solid var(--ui-edge);
   font-size: 17px;
-  font-weight: bold;
-  border-radius: 4px;
-  transform: rotate(-1deg);
-  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.45);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Mural maior que a janela + justify-content center cortaria o topo (título e
@@ -124,18 +126,18 @@ const ACHIEVEMENTS_CSS = `
   padding-top: 14px;
   cursor: default;
 }
-/* Trancado aqui não é "EM BREVE": é meta a cumprir — sem cursor de proibido.
-   Aspecto de desabilitado: papel e tinta acinzentados, emoji sem cor. */
+/* Trancado aqui não é "PRÓXIMA RODADA": é meta a cumprir — sem cursor de
+   proibido. Aspecto "fora da rodada": painel apagado, emoji sem cor (o tema
+   já dá o fundo --ui-locked; aqui só o texto e o grayscale do ícone). */
 #screens .ach-card.locked {
   cursor: default;
   filter: grayscale(0.9);
-  opacity: 0.75;
-  color: #6b655a;
+  color: var(--ui-locked-text);
 }
 #screens .ach-card.locked .ach-icon { opacity: 0.55; }
 .ach-icon { font-size: 30px; line-height: 1.1; }
 
-@media (max-width: 640px), (max-height: 560px) {
+@media ${MEDIA_COMPACT} {
   #screens .ach-card { width: clamp(140px, 40vw, 180px); min-height: 150px; }
   .ach-counter { font-size: 14px; }
 }

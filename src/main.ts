@@ -1,3 +1,12 @@
+// Fonte da UI (decisão 2026-11-26, "placar esportivo BR"): Barlow Condensed
+// EMBARCADA via fontsource — o Vite empacota os woff2, zero CDN em runtime.
+// Só os pesos usados pelo tema (500 corpo, 600 botões/chips, 700 números,
+// 700 itálico letreiros) para segurar o bundle.
+import '@fontsource/barlow-condensed/500.css';
+import '@fontsource/barlow-condensed/600.css';
+import '@fontsource/barlow-condensed/700.css';
+import '@fontsource/barlow-condensed/700-italic.css';
+import { injectUiTokensOnce } from './theme/tokens';
 import type { GameData } from './data/tables';
 import { gameData } from './data/tables';
 import { validateGameData } from './data/validate';
@@ -48,6 +57,10 @@ import { createSettingsStore } from './meta/settingsStore';
 //                     (as telas mandam); padrão: o primeiro mapa jogável
 // Sem ?personagem=, os demais overrides ficam guardados e aplicam-se ao mundo
 // criado quando o jogador chega ao jogo pelas telas (mesmo caminho de código).
+// Tokens de estilo em :root ANTES de qualquer tela/overlay nascer (todos
+// consomem var(--ui-*); ver src/theme/tokens.ts).
+injectUiTokensOnce();
+
 const params = new URLSearchParams(window.location.search);
 const data = applyUrlOverrides(gameData, params);
 validateGameData(data);

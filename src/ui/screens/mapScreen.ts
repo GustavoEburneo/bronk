@@ -19,8 +19,8 @@ export interface MapScreenCallbacks {
 /**
  * Seleção de mapa: cards gerados de `data.maps`, na ordem da tabela
  * (fronteira do TECH: conteúdo como dado). `playable` decide o desenho:
- * card selecionável (nome + tagline) ou slot bloqueado com carimbo
- * "EM BREVE". Com 2+ mapas jogáveis (Feira desde 2026-11-19), a tela segue
+ * card selecionável (nome + tagline) ou slot bloqueado com a placa LED
+ * "PRÓXIMA RODADA". Com 2+ mapas jogáveis (Feira desde 2026-11-19), a tela segue
  * o modelo da seleção de personagem: clique confirma direto; teclas 1..N
  * selecionam (e focam) e Enter confirma a seleção. A última escolha fica
  * destacada na próxima visita. Clicar num bloqueado dá feedback curto de
@@ -47,7 +47,7 @@ export function createMapScreen(parent: HTMLElement, callbacks: MapScreenCallbac
   backButton.textContent = '← Voltar (Esc)';
   backButton.addEventListener('click', () => callbacks.onBack());
 
-  const title = el('h1', 'screen-title', 'Escolha o mapa');
+  const title = el('h1', 'screen-title', 'Tabela de jogos');
   const hint = el('p', 'screen-hint', 'Clique num mapa liberado para jogar. Esc volta.');
 
   // Aviso de "negado": leitores de tela anunciam a mudança (aria-live).
@@ -81,7 +81,7 @@ export function createMapScreen(parent: HTMLElement, callbacks: MapScreenCallbac
     if (def.playable) {
       card.className = `screen-card card-paper-${index % 3}`;
       card.setAttribute('aria-pressed', 'false');
-      const stamp = el('span', 'card-chosen', 'ESTE!');
+      const stamp = el('span', 'card-chosen', 'É AQUI!');
       stamp.hidden = true;
       card.append(el('span', 'card-name', def.name));
       if (def.tagline !== undefined) card.append(el('span', 'card-line', def.tagline));
@@ -93,12 +93,12 @@ export function createMapScreen(parent: HTMLElement, callbacks: MapScreenCallbac
       });
       stamps.push(stamp);
     } else {
-      // Slot bloqueado: só o nome + carimbo EM BREVE; não navega.
+      // Slot bloqueado: só o nome + placa LED "PRÓXIMA RODADA"; não navega.
       card.className = 'screen-card locked';
       // aria-disabled (e não disabled): continua focável e o clique explica o porquê.
       card.setAttribute('aria-disabled', 'true');
       card.append(
-        el('span', 'card-stamp', 'EM BREVE'),
+        el('span', 'card-stamp', 'PRÓXIMA RODADA'),
         el('span', 'card-name', def.name),
         el('span', 'card-key', 'ainda fechado'),
       );

@@ -153,22 +153,29 @@ const DAMAGE_CSS = `
 .dmg-label {
   position: absolute;
   transform: translate(-50%, -100%);
-  font-family: 'Comic Sans MS', 'Comic Sans', cursive, sans-serif;
-  font-weight: bold;
+  /* Pilha de fonte duplicada CONSCIENTEMENTE (render não importa de ui/;
+     a família é global via @fontsource no main — ver src/theme/tokens.ts e
+     index.html). */
+  font-family: 'Barlow Condensed', 'Arial Narrow', 'Liberation Sans Narrow',
+    'Helvetica Neue', sans-serif;
+  font-weight: 700; /* peso embarcado da Barlow (500/600/700 no main) */
   font-size: 17px;
-  color: #ffe066;
-  -webkit-text-stroke: 3px rgba(20, 10, 4, 0.9);
+  /* Cores dos tokens com fallback hard-coded (mesmos valores de tokens.ts):
+     cobre até um boot fora de ordem, sem furar a fronteira render×ui. */
+  color: var(--ui-yellow, #ffd400);
+  /* Contorno escuro no tom do fundo do tema (--ui-bg-0): legível sobre o 3D. */
+  -webkit-text-stroke: 3px rgba(12, 17, 24, 0.9);
   paint-order: stroke fill;
   animation: dmg-float ${LABEL_LIFETIME_MS}ms ease-out forwards;
   white-space: nowrap;
 }
 .dmg-crit {
   font-size: 24px;
-  color: #ff9f2a;
+  color: var(--ui-crit, #ff9f2a);
 }
 .dmg-player {
   font-size: 22px;
-  color: #ff4a3a;
+  color: var(--ui-danger, #d7263d);
 }
 @keyframes dmg-float {
   0% { translate: 0 0; opacity: 1; scale: 1.25; }

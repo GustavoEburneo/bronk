@@ -13,10 +13,14 @@
         margin: 0;
         height: 100%;
         overflow: hidden;
-        background: #14121a;
-        /* Comic Sans de propósito: faz parte do estilo tosco (ver docs/DECISIONS.md). */
-        font-family: 'Comic Sans MS', 'Comic Neue', 'Segoe Print', 'Chalkboard SE', cursive;
-        color: #e8e4da;
+        background: #0c1118; /* --ui-bg-0 (tokens em src/theme/tokens.ts) */
+        /* Barlow Condensed EMBARCADA via @fontsource no main.ts (decisão
+           2026-11-26, tema "placar esportivo BR" — substitui a Comic Sans do
+           panfleto de 2026-11-16). Fallbacks condensados de sistema. */
+        font-family: 'Barlow Condensed', 'Arial Narrow', 'Liberation Sans Narrow',
+          'Helvetica Neue', sans-serif;
+        font-weight: 500;
+        color: #f2f5f8;
       }
       #game {
         display: block;
@@ -35,6 +39,8 @@
       #hud[hidden] {
         display: none;
       }
+      /* Overlay de fim de run: só a CASCA aqui (ids são contrato do harness);
+         o visual vive em src/ui/deathOverlay.ts, como nos demais overlays. */
       #death-overlay {
         position: fixed;
         inset: 0;
@@ -43,61 +49,14 @@
         align-items: center;
         justify-content: center;
         gap: 16px;
-        background: rgba(10, 8, 14, 0.78);
+        background: rgba(8, 11, 17, 0.82);
         text-align: center;
       }
       #death-overlay[hidden] {
         display: none;
       }
-      #death-overlay h1 {
-        margin: 0;
-        font-size: 52px;
-        color: #ff6b6b;
-        transform: rotate(-3deg);
-        text-shadow: 3px 3px 0 #2a1016;
-      }
-      #death-stats {
-        font-size: 18px;
-        /* O overlay escreve em 2 linhas (stats da run + bananas pro cofre). */
-        white-space: pre-line;
-      }
-      .death-actions {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 16px;
-      }
-      #restart-btn,
-      #menu-btn {
-        font: inherit;
-        font-size: 18px;
-        padding: 10px 28px;
-        border-radius: 8px;
-        background: #2a2433;
-        cursor: pointer;
-      }
-      /* "Jogar de novo" é a ação principal (amarelo); o menu é a secundária (neutra). */
-      #restart-btn {
-        border: 2px solid #ffe066;
-        color: #ffe066;
-        transform: rotate(1.5deg);
-      }
-      #menu-btn {
-        border: 2px solid rgba(255, 255, 255, 0.45);
-        color: #e8e4da;
-        transform: rotate(-1.2deg);
-      }
       #menu-btn[hidden] {
         display: none;
-      }
-      #restart-btn:hover,
-      #menu-btn:hover {
-        background: #3a3145;
-      }
-      #restart-btn:focus-visible,
-      #menu-btn:focus-visible {
-        outline: 3px dashed #ffe066;
-        outline-offset: 3px;
       }
     </style>
   </head>
@@ -105,7 +64,7 @@
     <canvas id="game"></canvas>
     <div id="hud">carregando…</div>
     <div id="death-overlay" hidden>
-      <h1>Fim da run</h1>
+      <h1>Fim de jogo</h1>
       <div id="death-stats"></div>
       <div class="death-actions">
         <!-- Rótulos do GDD/DECISIONS 2026-11-17; os ids são contrato do harness. -->

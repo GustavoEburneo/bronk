@@ -1,15 +1,23 @@
 /**
- * Base compartilhada das telas de menu (início → personagem → mapa).
+ * Base compartilhada das telas de menu (início → personagem → mapa) E das
+ * peças visuais do tema "placar esportivo BR" (decisão 2026-11-26, substitui
+ * o panfleto/Comic Sans de 2026-11-16).
  *
- * Fonte única das variáveis de estilo das telas: cores, tipografia e
- * espaçamento vivem nas custom properties de `#screens`, e todo o CSS das
- * telas vive aqui, usando essas variáveis. Os valores espelham a paleta dos
- * overlays (hoje duplicada no index.html e no upgradeOverlay — unificar num
- * :root é dívida registrada lá).
+ * As CORES vivem em `:root` (src/theme/tokens.ts, injetado no boot pelo main)
+ * — aqui ficam as CLASSES. As classes `.sb-*` ("scoreboard") são o vocabulário
+ * compartilhado do tema e NÃO são escopadas a `#screens` de propósito: HUD e
+ * overlays (que vivem fora de `#screens`) as reutilizam chamando
+ * `injectScreenThemeOnce()`.
  *
- * Mesmo mecanismo de construção dos overlays novos (ver upgradeOverlay):
- * DOM e CSS nascem nos módulos, nada no index.html. As telas são DOM por
- * cima do canvas, então o texto fica nítido mesmo com o render em 270p.
+ * REGRA DA CASA do painel chanfrado: `clip-path` CORTA `box-shadow` e
+ * `outline`. Então: profundidade = `filter: drop-shadow(...)` (aplica DEPOIS
+ * do clip — só em peça estática, nunca em painel repintado por frame como a
+ * HUD: o filter re-rasteriza a cada repaint); foco = anel INTERNO
+ * `box-shadow: inset ...` (inset sobrevive ao clip) + clareada de fundo.
+ *
+ * Mesmo mecanismo de construção dos overlays (ver upgradeOverlay): DOM e CSS
+ * nascem nos módulos, nada no index.html. As telas são DOM por cima do
+ * canvas, então o texto fica nítido independente da resolução do render.
  */
 
 /** Contrato mínimo de uma tela de menu (ver TECH, "Estado de aplicação"). */
@@ -43,7 +51,7 @@ export function injectStyleOnce(id: string, css: string): void {
   document.head.append(style);
 }
 
-/** Injeta o tema das telas (variáveis + classes compartilhadas) uma vez. */
+/** Injeta o tema (classes compartilhadas do placar) uma vez. */
 export function injectScreenThemeOnce(): void {
   injectStyleOnce('screen-theme-style', THEME_CSS);
 }
@@ -74,35 +82,180 @@ export function swallowEnterRepeat(event: KeyboardEvent): boolean {
   return true;
 }
 
-const THEME_CSS = `
-#screens {
-  --ui-text: #e8e4da;
-  --ui-ink: #26180b;
-  --ui-paper-0: #fff3b0;
-  --ui-paper-1: #ffd6ec;
-  --ui-paper-2: #d2f4ff;
-  --ui-paper-locked: #cfcabc;
-  --ui-ink-locked: #4a443a;
-  --ui-promo: #e8231a;
-  --ui-promo-ink: #fffbe6;
-  --ui-accent: #ffe066;
-  --ui-panel: #2a2433;
-  --ui-panel-hover: #3a3145;
-  --ui-shadow: #2a1016;
-  --ui-staple: #b9b9b9;
-  --ui-gap: 16px;
-  --ui-radius: 8px;
+/**
+ * Breakpoint compacto compartilhado (janela estreita OU baixa, ex.: 800×500).
+ * Os módulos interpolam `@media ${MEDIA_COMPACT} { ... }` — o valor para de
+ * derivar entre os arquivos. Exceções documentadas nos próprios módulos:
+ * a pausa usa também um corte próprio de altura (o mural do build é alto) e
+ * o álbum tem a dobra extra de 900px.
+ */
+export const MEDIA_COMPACT = '(max-width: 640px), (max-height: 560px)';
 
+/**
+ * Chanfro padrão do painel de placar (canto inferior direito cortado).
+ * Interpolado onde o painel é recriado em CSS local de módulo.
+ */
+export const SB_CHAMFER =
+  'polygon(0 0, 100% 0, 100% calc(100% - var(--ui-chamfer)), calc(100% - var(--ui-chamfer)) 100%, 0 100%)';
+
+const THEME_CSS = `
+/* ===== Vocabulário "placar esportivo BR" (compartilhado por telas, HUD e
+   overlays — nada aqui é escopado a #screens de propósito) ================ */
+
+/* Painel de placar: o substituto único do antigo "papel grampeado". */
+.sb-panel {
+  position: relative;
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-edge);
+  border-left: 5px solid var(--ui-yellow);
+  clip-path: ${SB_CHAMFER};
+}
+/* Fita diagonal BR no topo: a substituta do grampo. */
+.sb-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: var(--ui-stripe);
+  opacity: 0.9;
+  pointer-events: none;
+}
+.sb-green { border-left-color: var(--ui-green); }
+.sb-blue { border-left-color: var(--ui-blue); }
+/* Profundidade pós-clip (ver regra da casa no topo): só em peça ESTÁTICA. */
+.sb-raised { filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.4)); }
+
+/* Letreiro lower third (título de tela/overlay): itálico 700 caps deslizando. */
+.sb-title {
+  margin: 0;
+  position: relative;
+  padding: 10px 28px 12px;
+  font-size: clamp(26px, 5vw, 44px);
+  font-weight: 700;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.05;
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-edge);
+  border-left: 6px solid var(--ui-yellow);
+  clip-path: ${SB_CHAMFER};
+  animation: sb-slide-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.sb-title::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: var(--ui-stripe);
+  pointer-events: none;
+}
+@keyframes sb-slide-in {
+  from { transform: translateX(-28px); opacity: 0; }
+}
+
+/* Chip do VAR: aviso/nota curta — amarelo com tinta escura. */
+.sb-chip {
+  padding: 4px 14px 5px;
+  background: var(--ui-yellow);
+  color: var(--ui-ink);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-left: 4px solid var(--ui-green);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+}
+
+/* Placa LED de 4º árbitro: "PRÓXIMA RODADA", "CONTRATADO"… */
+.sb-stamp {
+  padding: 4px 10px;
+  background: var(--ui-led-bg);
+  color: var(--ui-led);
+  border: 1px solid var(--ui-edge);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Bandeirinha de escanteio: flâmula com ponta ("ÚLTIMO LANCE!", "TITULAR!"). */
+.sb-flag {
+  padding: 4px 20px 4px 10px;
+  background: var(--ui-yellow);
+  color: var(--ui-ink);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%);
+}
+.sb-flag-green {
+  background: var(--ui-green);
+  color: var(--ui-text);
+}
+
+/* Botão de placar: caixa alta 600, chanfro, barra de acento que ALARGA no
+   hover (feedback por forma, não só cor; o deslize de 3px é proposital). */
+.sb-btn {
+  font: inherit;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-edge);
+  border-left: 5px solid var(--ui-yellow);
+  clip-path: ${SB_CHAMFER};
+  cursor: pointer;
+}
+.sb-btn:hover {
+  background: var(--ui-panel-hover);
+  border-left-width: 8px;
+}
+/* Foco em peça chanfrada: anel INTERNO (outline morreria no clip). */
+.sb-btn:focus-visible,
+.sb-panel:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 3px var(--ui-focus);
+  background: var(--ui-panel-hover);
+}
+
+/* Reduced motion de TODAS as camadas do tema (telas, HUD e overlays): bloco
+   único — os módulos não precisam repetir o media query. */
+@media (prefers-reduced-motion: reduce) {
+  #screens *, #hud *, #upgrade-overlay *, #pause-overlay *, #death-overlay *,
+  .sb-title {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ===== Telas de menu ===================================================== */
+
+#screens {
   position: fixed;
   inset: 0;
   z-index: 5;
   color: var(--ui-text);
+  font-weight: 500;
   text-align: center;
-  /* Mural opaco (poste com papéis grampeados): em menu nada do canvas aparece. */
+  /* Estádio à noite (opaco: em menu nada do canvas aparece): arquibancada
+     sutil em linhas horizontais + faixa BR translúcida cruzando + gradiente. */
   background:
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 9px),
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 2px, transparent 2px 110px),
-    linear-gradient(180deg, #241e2e 0%, #14121a 100%);
+    linear-gradient(115deg,
+      transparent 0 56%,
+      rgba(0, 155, 58, 0.09) 56% 64%,
+      rgba(255, 212, 0, 0.07) 64% 68%,
+      rgba(11, 78, 162, 0.10) 68% 78%,
+      transparent 78%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 3px, transparent 3px 26px),
+    linear-gradient(180deg, var(--ui-bg-1) 0%, var(--ui-bg-0) 100%);
 }
 #screens[hidden] { display: none; }
 
@@ -120,27 +273,52 @@ const THEME_CSS = `
 }
 #screens .screen[hidden] { display: none; }
 
+/* Título de tela = letreiro lower third (mesma receita do .sb-title). */
 .screen-title {
   margin: 0;
+  position: relative;
+  padding: 10px 28px 12px;
   font-size: clamp(26px, 5vw, 44px);
-  color: var(--ui-accent);
-  transform: rotate(-2deg);
-  text-shadow: 3px 3px 0 var(--ui-shadow);
+  font-weight: 700;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.05;
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-edge);
+  border-left: 6px solid var(--ui-yellow);
+  clip-path: ${SB_CHAMFER};
+  animation: sb-slide-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.screen-hint { margin: 0; font-size: 16px; }
-/* Linha de aviso (ex.: mapa bloqueado): papel amarelo, sempre reserva altura. */
+.screen-title::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: var(--ui-stripe);
+  pointer-events: none;
+}
+
+.screen-hint { margin: 0; font-size: 17px; color: var(--ui-text-dim); }
+
+/* Linha de aviso (ex.: mapa bloqueado): chip do VAR, sempre reserva altura. */
 .screen-status {
   margin: 0;
-  min-height: 1.6em;
+  min-height: 1.8em;
   font-size: 15px;
 }
 .screen-status:not(:empty) {
-  padding: 3px 14px;
-  background: var(--ui-paper-0);
+  padding: 4px 14px 5px;
+  background: var(--ui-yellow);
   color: var(--ui-ink);
-  border-radius: 4px;
-  transform: rotate(-1deg);
-  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.45);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-left: 4px solid var(--ui-green);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
 }
 
 .screen-cards {
@@ -151,7 +329,7 @@ const THEME_CSS = `
   max-width: 1100px;
 }
 
-/* Card estilo panfleto grampeado num poste (GDD). */
+/* Card de seleção: painel de placar (reto — o torto morreu com o panfleto). */
 .screen-card {
   position: relative;
   display: flex;
@@ -160,41 +338,51 @@ const THEME_CSS = `
   gap: 8px;
   width: clamp(180px, 26vw, 260px);
   min-height: 170px;
-  padding: 18px 14px 14px;
+  padding: 20px 14px 18px; /* topo maior: a fita BR ocupa 6px */
   font: inherit;
-  color: var(--ui-ink);
-  background: var(--ui-paper-0);
-  border: 2px solid rgba(0, 0, 0, 0.35);
-  border-radius: 2px; /* papel de rua, não botão bonito */
-  box-shadow: 4px 6px 0 rgba(0, 0, 0, 0.45);
+  font-weight: 500;
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-edge);
+  border-left: 5px solid var(--ui-yellow);
+  clip-path: ${SB_CHAMFER};
   cursor: pointer;
 }
-.screen-card::before { /* grampo no topo */
+.screen-card::before { /* fita BR no topo (ex-grampo) */
   content: '';
   position: absolute;
-  top: -5px;
-  left: 50%;
-  width: 26px;
-  height: 8px;
-  background: var(--ui-staple);
-  border: 1px solid rgba(0, 0, 0, 0.5);
-  border-radius: 2px;
-  transform: translateX(-50%) rotate(-2deg);
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: var(--ui-stripe);
+  pointer-events: none;
 }
-.card-paper-1 { background: var(--ui-paper-1); }
-.card-paper-2 { background: var(--ui-paper-2); }
-.screen-cards .screen-card:nth-child(odd) { transform: rotate(-2.5deg); }
-.screen-cards .screen-card:nth-child(even) { transform: rotate(1.8deg) translateY(8px); }
-.screen-cards .screen-card:not(.locked):hover,
-.screen-cards .screen-card:not(.locked):focus-visible { transform: scale(1.05); }
-/* Amarelo sobre o mural escuro: o contorno fica fora do papel. */
-.screen-card:focus-visible { outline: 4px dashed var(--ui-accent); outline-offset: 4px; }
+/* As variações de "papel" viram variações da barra de acento. */
+.card-paper-1 { border-left-color: var(--ui-green); }
+.card-paper-2 { border-left-color: var(--ui-blue); }
+.screen-cards .screen-card:not(.locked):hover {
+  background: var(--ui-panel-hover);
+  border-left-width: 8px;
+}
+/* Foco: anel interno (outline morre no clip-path — regra da casa). */
+.screen-card:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 3px var(--ui-focus);
+  background: var(--ui-panel-hover);
+}
 
-.card-name { font-size: 20px; font-weight: bold; line-height: 1.15; }
+.card-name {
+  font-size: 20px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.15;
+}
 .card-line { font-size: 15px; line-height: 1.25; }
 .card-play {
   padding-top: 6px;
-  border-top: 2px dashed rgba(0, 0, 0, 0.35);
+  border-top: 1px solid var(--ui-edge);
   font-size: 14px;
   line-height: 1.3;
 }
@@ -202,81 +390,98 @@ const THEME_CSS = `
   margin-top: auto;
   align-self: stretch;
   padding-top: 6px;
-  border-top: 2px dashed rgba(0, 0, 0, 0.4);
+  border-top: 1px solid var(--ui-edge);
   font-size: 13px;
+  color: var(--ui-text-dim);
 }
 
-/* Card selecionado: adesivo torto + moldura — forma e posição, não só cor. */
+/* Card selecionado: barra verde larga + fundo de linha de tabela + flâmula. */
 .screen-card.selected {
-  border-color: var(--ui-promo);
-  box-shadow: 0 0 0 3px var(--ui-promo), 6px 8px 0 rgba(0, 0, 0, 0.45);
+  background: var(--ui-panel-2);
+  border-left: 8px solid var(--ui-green);
 }
 .card-chosen {
   position: absolute;
-  top: -12px;
-  right: -12px;
-  padding: 4px 10px;
-  background: var(--ui-promo);
-  color: var(--ui-promo-ink);
+  top: -10px;
+  right: -8px;
+  padding: 4px 20px 4px 10px;
+  background: var(--ui-green);
+  color: var(--ui-text);
   font-size: 13px;
-  font-weight: bold;
-  border-radius: 999px;
-  transform: rotate(10deg);
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%);
 }
 
-/* Card bloqueado: papel desbotado, borda tracejada, carimbo torto EM BREVE. */
+/* Card bloqueado: painel "fora da rodada" + placa LED do 4º árbitro. */
 .screen-card.locked {
-  background: var(--ui-paper-locked);
-  color: var(--ui-ink-locked);
-  border-style: dashed;
-  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.35);
+  background: var(--ui-locked);
+  color: var(--ui-locked-text);
+  border-left-color: var(--ui-edge);
   cursor: not-allowed;
 }
+.screen-card.locked::before { opacity: 0.25; }
 .card-stamp {
   position: absolute;
-  top: 10px;
-  right: -8px;
-  padding: 3px 10px;
-  border: 3px solid var(--ui-promo);
-  border-radius: 4px;
-  background: rgba(255, 251, 230, 0.92);
-  color: var(--ui-promo);
+  top: 12px;
+  right: 8px;
+  padding: 4px 10px;
+  background: var(--ui-led-bg);
+  color: var(--ui-led);
+  border: 1px solid var(--ui-edge);
   font-size: 13px;
-  font-weight: bold;
-  letter-spacing: 2px;
-  transform: rotate(8deg);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 .screen-card.denied { animation: card-denied 0.3s steps(4); }
 @keyframes card-denied {
-  25% { transform: translateX(-6px) rotate(-2deg); }
-  75% { transform: translateX(6px) rotate(2deg); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
 }
 
-/* Botões de painel (Voltar): mesmo desenho do reroll do panfleto. */
+/* Botões de painel (CONFIRMAR/Voltar): botão de placar. */
 .screen-primary,
 .screen-back {
   font: inherit;
-  border-radius: var(--ui-radius);
-  border: 2px solid var(--ui-accent);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ui-text);
   background: var(--ui-panel);
-  color: var(--ui-accent);
+  border: 1px solid var(--ui-edge);
+  border-left: 5px solid var(--ui-yellow);
+  clip-path: ${SB_CHAMFER};
   cursor: pointer;
 }
 .screen-primary:hover,
-.screen-back:hover { background: var(--ui-panel-hover); }
+.screen-back:hover {
+  background: var(--ui-panel-hover);
+  border-left-width: 8px;
+}
 .screen-primary:focus-visible,
-.screen-back:focus-visible { outline: 3px dashed var(--ui-accent); outline-offset: 3px; }
+.screen-back:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 3px var(--ui-focus);
+  background: var(--ui-panel-hover);
+}
 
 .screen-primary {
   font-size: 20px;
   padding: 14px 40px;
-  border-width: 3px;
-  transform: rotate(1.5deg);
-  box-shadow: 4px 5px 0 rgba(0, 0, 0, 0.45);
+  border-left-color: var(--ui-green);
+  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.4));
 }
 .primary-label { display: block; }
-.primary-sub { display: block; font-size: 13px; opacity: 0.85; }
+.primary-sub {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ui-text-dim);
+}
 
 .screen-back {
   position: absolute;
@@ -284,42 +489,40 @@ const THEME_CSS = `
   left: 14px;
   font-size: 15px;
   padding: 8px 16px;
-  transform: rotate(-1.5deg);
 }
 
-/* Cartaz da tela de início: um panfleto grande grampeado. */
+/* Escudo do clube na tela de início: painel com a ponta de escudo embaixo. */
 .start-poster {
   position: relative;
-  padding: 26px 52px 34px;
-  background: var(--ui-paper-0);
-  color: var(--ui-ink);
-  border: 2px solid rgba(0, 0, 0, 0.35);
-  border-radius: 2px;
-  box-shadow: 6px 8px 0 rgba(0, 0, 0, 0.45);
-  transform: rotate(-2deg);
+  padding: 30px 56px 52px;
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-edge);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 34px), 50% 100%, 0 calc(100% - 34px));
+  filter: drop-shadow(0 5px 0 rgba(0, 0, 0, 0.4));
 }
-.start-poster::before { /* grampo */
+.start-poster::before { /* fita BR larga: a faixa do escudo */
   content: '';
   position: absolute;
-  top: -5px;
-  left: 50%;
-  width: 30px;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 9px;
-  background: var(--ui-staple);
-  border: 1px solid rgba(0, 0, 0, 0.5);
-  border-radius: 2px;
-  transform: translateX(-50%) rotate(-2deg);
+  background: var(--ui-stripe);
+  pointer-events: none;
 }
 .start-title {
   margin: 0;
   font-size: clamp(44px, 10vw, 88px);
+  font-weight: 700;
+  font-style: italic;
   line-height: 1.05;
-  color: var(--ui-promo);
-  text-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
-  transform: rotate(-1deg);
+  letter-spacing: 0.02em;
+  color: var(--ui-yellow);
+  text-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
 }
 
-/* Coluna de botões da tela de início: panfletos empilhados, levemente tortos. */
+/* Coluna de botões do início: lower thirds empilhados, retos. */
 .menu-column {
   display: flex;
   flex-direction: column;
@@ -329,97 +532,89 @@ const THEME_CSS = `
 .menu-btn {
   width: clamp(220px, 32vw, 300px);
   min-height: 0;
-  padding: 12px 18px 10px;
+  padding: 14px 18px 10px;
   gap: 4px;
 }
 .menu-btn .card-key { margin-top: 0; }
-.menu-column .menu-btn:nth-child(odd) { transform: rotate(-1.6deg); }
-.menu-column .menu-btn:nth-child(even) { transform: rotate(1.2deg); }
-.menu-column .menu-btn:not(.locked):hover,
-.menu-column .menu-btn:not(.locked):focus-visible { transform: scale(1.06); }
-/* JOGAR: o único funcional — maior por forma e posição, não só por cor. */
-.menu-play .card-name { font-size: 28px; color: var(--ui-promo); letter-spacing: 1px; }
-/* Botão compacto: o carimbo sobe para o canto e não cobre o rótulo. */
-.menu-btn .card-stamp { top: -10px; right: -14px; font-size: 12px; }
+/* JOGAR: o único funcional — maior por forma (barra verde larga), não só cor. */
+.menu-play { border-left: 8px solid var(--ui-green); }
+.menu-play .card-name { font-size: 28px; color: var(--ui-yellow); }
+/* Botão compacto: a placa sobe para o canto e não cobre o rótulo. */
+.menu-btn .card-stamp { top: -10px; right: -8px; font-size: 12px; }
 
-/* Caixinha do dev (botão de copiar o Pix copia e cola — sem QR desde
-   2026-11-23): panfleto menor no canto inferior direito, fora do caminho
-   visual título → JOGAR. Fixa: não rola junto e não cria scroll horizontal. */
+/* Placa de patrocínio da transmissão (a caixinha do Pix do dev): painel
+   pequeno no canto inferior direito, fora do caminho visual título → JOGAR.
+   Fixa: não rola junto e não cria scroll horizontal. */
 .dev-box {
   position: fixed;
   right: 14px;
   bottom: 14px;
   width: 182px;
-  padding: 12px 12px 8px;
-  background: var(--ui-paper-2);
-  color: var(--ui-ink);
-  border: 2px solid rgba(0, 0, 0, 0.35);
-  border-radius: 2px;
-  box-shadow: 4px 5px 0 rgba(0, 0, 0, 0.45);
-  transform: rotate(2deg);
+  padding: 16px 12px 10px;
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border: 1px solid var(--ui-edge);
+  border-left: 4px solid var(--ui-blue);
+  clip-path: ${SB_CHAMFER};
   font-size: 13px;
   line-height: 1.25;
 }
-.dev-box::before { /* grampo, como nos demais panfletos */
+.dev-box::before { /* fita BR, como nos demais painéis */
   content: '';
   position: absolute;
-  top: -5px;
-  left: 50%;
-  width: 22px;
-  height: 7px;
-  background: var(--ui-staple);
-  border: 1px solid rgba(0, 0, 0, 0.5);
-  border-radius: 2px;
-  transform: translateX(-50%) rotate(3deg);
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: var(--ui-stripe);
+  pointer-events: none;
 }
-.dev-invite { margin: 0 0 8px; font-weight: bold; }
-/* Botão de copiar: adesivo de promoção (vermelho), torto como tudo aqui. */
+.dev-invite { margin: 0 0 8px; font-weight: 600; }
+/* Botão de copiar: verde de "contratação fechada". */
 .dev-copy {
   font: inherit;
   font-size: 12.5px;
-  font-weight: bold;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   padding: 7px 10px;
-  background: var(--ui-promo);
-  color: var(--ui-promo-ink);
-  border: 2px solid rgba(0, 0, 0, 0.4);
-  border-radius: 4px;
-  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.4);
-  transform: rotate(-1.5deg);
+  background: var(--ui-green);
+  color: var(--ui-text);
+  border: 1px solid var(--ui-green-deep);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
   cursor: pointer;
 }
-.dev-copy:hover { transform: rotate(-1.5deg) scale(1.05); }
-.dev-copy:focus-visible { outline: 3px dashed var(--ui-ink); outline-offset: 3px; }
-/* Fallback sem clipboard: o código aparece num campo para copiar na mão. */
+.dev-copy:hover { background: var(--ui-green-deep); }
+.dev-copy:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 3px var(--ui-ink);
+}
+/* Fallback sem clipboard: o código aparece num "visor" para copiar na mão. */
 .dev-payload {
   width: 100%;
   margin-top: 6px;
   padding: 3px 4px;
   font-size: 10px;
   font-family: monospace;
-  color: var(--ui-ink);
-  background: #fffbe6;
-  border: 2px solid rgba(0, 0, 0, 0.35);
-  border-radius: 2px;
+  color: var(--ui-led);
+  background: var(--ui-led-bg);
+  border: 1px solid var(--ui-edge);
 }
-.dev-caption { margin: 8px 0 0; font-size: 11.5px; min-height: 1.2em; }
-
-@media (prefers-reduced-motion: reduce) {
-  #screens * { animation: none !important; transition: none !important; }
-}
+.dev-caption { margin: 8px 0 0; font-size: 11.5px; min-height: 1.2em; color: var(--ui-text-dim); }
 
 /* Janela estreita ou baixa (ex.: 800×500): conteúdo encolhe e ancora no topo. */
-@media (max-width: 640px), (max-height: 560px) {
+@media ${MEDIA_COMPACT} {
   #screens .screen { justify-content: flex-start; padding-top: 22px; }
-  .screen-title { font-size: 24px; }
+  .screen-title { font-size: 24px; padding: 8px 18px 9px; }
   .start-title { font-size: 42px; }
   .screen-card { width: clamp(150px, 42vw, 210px); min-height: 150px; }
   .screen-back { top: 10px; left: 10px; }
-  /* Menu de início compacto: cartaz, coluna e botões encolhem para os 4
-     botões + aviso caberem sem rolagem; a caixinha do dev encolhe (QR menor)
-     para não cobrir os botões — decisão do GDD: reduzir o QR, não movê-lo. */
-  .start-poster { padding: 12px 32px 16px; }
+  /* Menu de início compacto: escudo, coluna e botões encolhem para os botões
+     + aviso caberem sem rolagem; a placa de patrocínio encolhe para não
+     cobrir os botões — mesma decisão do GDD (reduzir, não mover). */
+  .start-poster { padding: 16px 32px 38px; }
   .menu-column { gap: 8px; }
-  .menu-btn { width: clamp(190px, 46vw, 250px); min-height: 0; padding: 6px 14px 4px; }
+  .menu-btn { width: clamp(190px, 46vw, 250px); min-height: 0; padding: 10px 14px 4px; }
   .menu-btn .card-name { font-size: 16px; }
   .menu-btn .card-key { font-size: 11px; padding-top: 3px; }
   .menu-play .card-name { font-size: 21px; }

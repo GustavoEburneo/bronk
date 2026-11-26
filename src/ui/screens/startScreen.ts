@@ -6,6 +6,7 @@ import {
   hasModifier,
   swallowEnterRepeat,
   INPUT_GUARD_MS,
+  MEDIA_COMPACT,
   type Screen,
 } from './screenTheme';
 
@@ -52,8 +53,10 @@ const MENU_BUTTONS = [
 
 type MenuAction = (typeof MENU_BUTTONS)[number]['action'];
 
-/** Textos da caixinha do dev (convite exato do GDD, decidido em 2026-11-18). */
-const DEV_INVITE = 'Gostou do caos? Paga um café pro dev.';
+/** Textos da caixinha do dev (chamada do Pix de 2026-11-18; convite reescrito
+ * no tema "placar esportivo BR" em 2026-11-26: a caixinha virou a placa de
+ * patrocínio da transmissão). */
+const DEV_INVITE = 'Patrocínio oficial da transmissão: paga um café pro dev.';
 const DEV_CAPTION = 'Pix, e o troco é seu.';
 const DEV_COPY_LABEL = '💸 Copiar Pix copia e cola';
 const DEV_COPIED = 'Copiado! Cola no app do banco. ☕';
@@ -105,8 +108,8 @@ export interface StartScreenCallbacks {
 
 /**
  * Tela de início — menu principal (GDD 2026-11-18; loja: 2026-11-19;
- * configurações: 2026-11-23): título "BRonk" no topo, coluna de botões estilo
- * panfleto (todos funcionais) e a caixinha do dev (botão que copia o Pix
+ * configurações: 2026-11-23): escudo "BRonk" no topo, coluna de botões estilo
+ * placar (todos funcionais) e a caixinha do dev (botão que copia o Pix
  * copia e cola) no canto inferior direito, fora do caminho título → JOGAR.
  * A tela só dispara callbacks — não conhece as outras telas nem a simulação.
  */
@@ -121,7 +124,7 @@ export function createStartScreen(parent: HTMLElement, callbacks: StartScreenCal
   const poster = el('div', 'start-poster', null);
   poster.append(el('h1', 'start-title', 'BRonk'));
 
-  const hint = el('p', 'screen-hint', 'Clique num botão do mural.');
+  const hint = el('p', 'screen-hint', 'Escolha sua jogada.');
 
   let visible = false;
   let acceptInputAt = 0;
@@ -250,8 +253,9 @@ export function createStartScreen(parent: HTMLElement, callbacks: StartScreenCal
 }
 
 /**
- * Papeizinhos de contato do canto inferior esquerdo (espelham a linguagem da
- * dev-box do canto direito; as variáveis --ui-* vêm do #screens).
+ * Mini-placas de borda de campo no canto inferior esquerdo (espelham a placa
+ * de patrocínio do canto direito): painel pequeno escuro com barra azul,
+ * caixa alta, reto — os tokens --ui-* vêm do :root (tokens.ts).
  */
 const CONTACT_CSS = `
 .contact-box {
@@ -266,23 +270,29 @@ const CONTACT_CSS = `
 .contact-link {
   display: inline-block;
   padding: 6px 12px;
-  background: var(--ui-paper-2);
-  color: var(--ui-ink);
+  background: var(--ui-panel);
+  color: var(--ui-text);
   font-size: 13px;
-  font-weight: bold;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   text-decoration: none;
-  border: 2px solid rgba(0, 0, 0, 0.35);
-  border-radius: 2px;
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.45);
-  transform: rotate(-1.5deg);
+  border: 1px solid var(--ui-edge);
+  border-left: 4px solid var(--ui-blue);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
 }
-.contact-link + .contact-link {
-  background: var(--ui-paper-1);
-  transform: rotate(1deg);
+/* Hover por forma (barra alarga) + fundo, como os botões de placar do tema. */
+.contact-link:hover {
+  background: var(--ui-panel-hover);
+  border-left-width: 6px;
 }
-.contact-link:hover { filter: brightness(1.06); }
-.contact-link:focus-visible { outline: 3px dashed var(--ui-promo); outline-offset: 3px; }
-@media (max-width: 640px), (max-height: 560px) {
+/* Foco em peça chanfrada: anel INTERNO (outline morre no clip — regra da casa). */
+.contact-link:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 3px var(--ui-focus);
+  background: var(--ui-panel-hover);
+}
+@media ${MEDIA_COMPACT} {
   .contact-box { left: 8px; bottom: 8px; gap: 6px; }
   .contact-link { font-size: 11.5px; padding: 5px 9px; }
 }

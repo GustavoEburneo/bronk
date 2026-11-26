@@ -200,8 +200,8 @@ Da revisão da fatia "Panfleto na Esquina" (2026-11-16, nenhuma bloqueia):
   registrar dispose por paridade caso overlays passem a ser recriados.
 - `validate.ts`: `effect.min`/`max` sem checagem de finitude — `NaN` desliga o clamp calado;
   exigir `Number.isFinite` quando definidos.
-- UI poderia unificar variáveis de estilo num `:root` (hoje escopadas ao overlay; index.html
-  segue com cores hard-codadas).
+- ~~UI poderia unificar variáveis de estilo num `:root`~~ — feito em 2026-11-26: tokens únicos
+  em `src/theme/tokens.ts` (repaginação "placar esportivo BR"; ver DECISIONS).
 - Decisão em aberto (game-designer/autor): com exatamente 3 elegíveis no pool, o reroll devolve
   o mesmo conjunto reordenado mas o botão aparece (reroll inútil). Ocultar exigiria a sim expor
   contagem de elegíveis ou flag `rerollChangesOptions`. GDD atual não é violado.

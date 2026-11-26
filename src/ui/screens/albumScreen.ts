@@ -15,6 +15,7 @@ import {
   injectScreenThemeOnce,
   injectStyleOnce,
   blurWithin,
+  MEDIA_COMPACT,
   type Screen,
 } from './screenTheme';
 
@@ -59,14 +60,14 @@ export function createAlbumScreen(parent: HTMLElement, meta: MetaStore, onBack: 
   const rightGrid = el('div', 'album-cards', null);
   rightGrid.setAttribute('role', 'list');
 
-  // Arte-d'água das páginas: bichos gigantes desbotados em azul + logo torto,
-  // como a arte de fundo impressa nos álbuns de banca (referência: álbum do
-  // DBZ ~2000, páginas branco-azuladas com a arte ciano atrás dos slots).
+  // Arte-d'água das páginas: bichos gigantes desbotados em verde + logo torto,
+  // como a arte de fundo impressa nos álbuns de banca (referência: álbum de
+  // COPA, páginas creme com a arte verde-bandeira atrás dos slots).
   function watermark(icons: string[], withLogo: boolean): HTMLElement {
     const wm = el('div', 'album-watermark', null);
     wm.setAttribute('aria-hidden', 'true');
     icons.forEach((icon, i) => wm.append(el('span', `wm-icon wm-${i}`, icon)));
-    if (withLogo) wm.append(el('span', 'wm-logo', 'BRONK!'));
+    if (withLogo) wm.append(el('span', 'wm-logo', 'COPA DO CAOS'));
     return wm;
   }
   const icons = types.map((t) => t.icon);
@@ -75,7 +76,7 @@ export function createAlbumScreen(parent: HTMLElement, meta: MetaStore, onBack: 
   const pageLeft = el('div', 'album-page album-page-left', null);
   pageLeft.append(
     watermark(icons.slice(0, 3), false),
-    el('p', 'album-page-title', 'COLEÇÃO BICHOS DA RUA'),
+    el('p', 'album-page-title', 'Seleção Bichos da Rua'),
     counter,
     leftGrid,
     el('span', 'album-page-num', '12'),
@@ -135,8 +136,8 @@ export function createAlbumScreen(parent: HTMLElement, meta: MetaStore, onBack: 
           ),
         );
       } else {
-        // Último degrau: set completo — carimbo de álbum fechado.
-        card.append(el('span', 'card-chosen', 'COMPLETO!'), el('span', 'album-next', 'bônus no talo'));
+        // Último degrau: set completo — flâmula de craque garantido.
+        card.append(el('span', 'card-chosen', 'CRAQUE!'), el('span', 'album-next', 'bônus no talo'));
       }
 
       (index < mid ? leftGrid : rightGrid).append(card);
@@ -161,11 +162,14 @@ export function createAlbumScreen(parent: HTMLElement, meta: MetaStore, onBack: 
 }
 
 const ALBUM_CSS = `
-/* ====== Álbum de figurinhas ABERTO, banca de jornal Brasil anos 2000 ======
-   Um livro aberto sobre o poste: capa vermelha aparecendo pelas bordas, duas
-   páginas creme lado a lado com vinco costurado no meio, pilha de folhas nas
-   bordas externas, moldura verde impressa, slots numerados tracejados
-   ("COLE AQUI") e figurinhas coladas tortas com borda branca e brilho. */
+/* ====== Álbum de figurinhas de COPA, aberto, banca de jornal BR ======
+   Sub-estilo PRÓPRIO de propósito: o álbum é um objeto IMPRESSO dentro do
+   jogo, não interface de transmissão — por isso não usa os painéis chanfrados
+   do tema (só botão de voltar e título, externos ao livro, vêm do tema).
+   Um livro aberto: capa verde-escura de álbum de Copa aparecendo pelas
+   bordas, duas páginas creme lado a lado com vinco costurado no meio, tinta
+   de impressão VERDE-BANDEIRA, slots numerados impressos e figurinhas
+   coladas tortas com borda branca e brilho. */
 
 /* Livro maior que a janela + center cortaria o topo (mesmo fix das
    conquistas): ancora no topo; com suporte, centra só quando cabe. */
@@ -175,13 +179,13 @@ const ALBUM_CSS = `
 }
 
 /* O livro aberto: álbum de banca de papel fininho — sem capa dura; em volta
-   só a beiradinha das outras folhas e a sombra do caderno sobre o poste. */
+   só a beiradinha da capa verde de Copa e a sombra do caderno sobre a mesa. */
 .album-book {
   position: relative;
   display: flex;
   width: min(1280px, 95vw);
   padding: 5px 6px 9px;
-  background: linear-gradient(180deg, #ded8c6 0%, #c9c2ad 100%);
+  background: linear-gradient(180deg, #1d5c38 0%, #133f26 100%);
   border-radius: 4px;
   box-shadow: 9px 12px 18px rgba(0, 0, 0, 0.55);
 }
@@ -199,8 +203,8 @@ const ALBUM_CSS = `
   pointer-events: none;
 }
 
-/* Páginas: papel branco-azulado de gráfica; TODA a tinta da página é azul de
-   impressão — só as figurinhas coladas têm cor de verdade. */
+/* Páginas: papel creme de gráfica; TODA a tinta da página é verde-bandeira
+   de impressão — só as figurinhas coladas têm cor de verdade. */
 .album-page {
   position: relative;
   overflow: hidden;
@@ -208,19 +212,20 @@ const ALBUM_CSS = `
   min-width: 0;
   padding: 22px 20px 40px;
   text-align: center;
-  color: #1f7ab0;
+  color: #0a7a3c;
 }
 .album-page-left {
   border-radius: 3px 0 0 3px;
-  background: linear-gradient(90deg, #fcfeff 0%, #f4f9fc 78%, #e2edf3 96%, #cfdde6 100%);
+  background: linear-gradient(90deg, #fdfdf6 0%, #f3f4e4 78%, #e2ecdd 96%, #cfdcc8 100%);
 }
 .album-page-right {
   border-radius: 0 3px 3px 0;
-  background: linear-gradient(90deg, #cfdde6 0%, #e2edf3 4%, #f4f9fc 22%, #fcfeff 100%);
+  background: linear-gradient(90deg, #cfdcc8 0%, #e2ecdd 4%, #f3f4e4 22%, #fdfdf6 100%);
 }
 
-/* Arte-d'água: bichos gigantes desbotados em azul + logo torto, sob os slots
-   (a arte de fundo ciano dos álbuns impressos). */
+/* Arte-d'água: bichos gigantes desbotados em verde + logo torto, sob os slots
+   (a arte de fundo monocromática dos álbuns impressos). A inclinação aqui é
+   DIEGÉTICA — arte impressa em diagonal na página, não UI torta do panfleto. */
 .album-watermark {
   position: absolute;
   inset: 0;
@@ -232,7 +237,9 @@ const ALBUM_CSS = `
   position: absolute;
   font-size: clamp(120px, 16vw, 230px);
   line-height: 1;
-  filter: grayscale(1) sepia(1) hue-rotate(165deg) saturate(3.2) brightness(1.18);
+  /* hue-rotate é FILTRO DE COR (tinge o emoji de verde-bandeira), não
+     transform decorativo — era 165deg (azul), virou 80deg (verde). */
+  filter: grayscale(1) sepia(1) hue-rotate(80deg) saturate(3.2) brightness(1.1);
   opacity: 0.16;
 }
 .wm-0 { top: 4%; left: -4%; transform: rotate(-14deg); }
@@ -246,25 +253,26 @@ const ALBUM_CSS = `
   font-weight: bold;
   font-style: italic;
   letter-spacing: 2px;
-  color: rgba(46, 143, 196, 0.18);
-  -webkit-text-stroke: 2px rgba(31, 122, 176, 0.3);
+  color: rgba(46, 155, 94, 0.18);
+  -webkit-text-stroke: 2px rgba(10, 122, 60, 0.3);
   transform: rotate(-12deg);
   white-space: nowrap;
 }
 
-/* Número de página, no canto externo, em azul de impressão. */
+/* Número de página, no canto externo, em verde de impressão. */
 .album-page-num {
   position: absolute;
   bottom: 12px;
   font-size: 14px;
   font-weight: bold;
   font-style: italic;
-  color: #2e8fc4;
+  color: #2e9b5e;
 }
 .album-page-left .album-page-num { left: 20px; }
 .album-page-right .album-page-num { right: 20px; }
 
-/* Cabeçalho: texto impresso em itálico azul, torto como saiu da gráfica. */
+/* Cabeçalho: texto impresso em itálico verde, reto (impressão de gráfica —
+   o torto é só das figurinhas coladas). */
 .album-page-title {
   display: inline-block;
   margin: 0 0 4px;
@@ -272,12 +280,11 @@ const ALBUM_CSS = `
   font-weight: bold;
   font-style: italic;
   letter-spacing: 3px;
-  color: #1f7ab0;
+  color: #0a7a3c;
   text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.8);
-  transform: rotate(-2deg);
 }
 
-/* Progresso impresso na página, no mesmo azul. */
+/* Progresso impresso na página, no mesmo verde. */
 .album-counter {
   margin: 0 auto 14px;
   max-width: 480px;
@@ -285,8 +292,9 @@ const ALBUM_CSS = `
   font-size: 14px;
   font-weight: bold;
   font-style: italic;
-  color: #2e8fc4;
-  border-bottom: 2px dotted #86c7e6;
+  font-variant-numeric: tabular-nums;
+  color: #2e9b5e;
+  border-bottom: 2px dotted #8fd0a8;
 }
 
 /* Grade de slots impressa em cada página. */
@@ -297,8 +305,9 @@ const ALBUM_CSS = `
   width: 100%;
 }
 
-/* Slot: retângulo de moldura ciano impresso na página — como no álbum da
-   banca —, com o número grande em azul dentro; cada um torto pra um lado. */
+/* Slot: retângulo de moldura verde impresso na página — como no álbum de
+   Copa —, com o número grande em verde dentro; moldura RETA (é impressão de
+   gráfica; torta só a figurinha colada). */
 #screens .album-slot {
   position: relative;
   display: flex;
@@ -308,16 +317,15 @@ const ALBUM_CSS = `
   min-height: 196px;
   padding: 6px 8px 8px;
   background: rgba(255, 255, 255, 0.22);
-  border: 2px solid #86c7e6;
+  border: 2px solid #8fd0a8;
   border-radius: 2px;
 }
-.album-cards .album-slot:nth-child(odd) { transform: rotate(-1.3deg); }
-.album-cards .album-slot:nth-child(even) { transform: rotate(1deg); }
 .album-num {
   font-size: 17px;
   font-weight: bold;
   letter-spacing: 1px;
-  color: #2e8fc4;
+  font-variant-numeric: tabular-nums;
+  color: #2e9b5e;
 }
 
 /* A figurinha: borda branca grossa, fundo colorido e brilho de plástico. */
@@ -332,8 +340,9 @@ const ALBUM_CSS = `
   border-radius: 6px;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2), 2px 3px 0 rgba(0, 0, 0, 0.25);
 }
+/* Fundos das figurinhas: família dourado/verde/azul BR (era dourado/rosa/azul). */
 .album-sticker.p0 { background: linear-gradient(160deg, #ffe066 0%, #ffb03a 100%); }
-.album-sticker.p1 { background: linear-gradient(160deg, #ffd6ec 0%, #ff8ac2 100%); }
+.album-sticker.p1 { background: linear-gradient(160deg, #9be3a8 0%, #2e9b5e 100%); }
 .album-sticker.p2 { background: linear-gradient(160deg, #d2f4ff 0%, #7cc6ff 100%); }
 /* Brilho diagonal de figurinha plastificada. */
 .album-slot.filled .album-sticker::after {
@@ -342,20 +351,21 @@ const ALBUM_CSS = `
   inset: 0;
   background: linear-gradient(115deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 34%);
 }
-/* Colada por criança: cada uma torta pra um lado. */
+/* Colada por criança: cada uma torta pra um lado — inclinação DIEGÉTICA (é a
+   figurinha colada no objeto impresso, não a UI torta do panfleto). */
 .album-cards .album-slot:nth-child(odd) .album-sticker { transform: rotate(-3deg); }
 .album-cards .album-slot:nth-child(even) .album-sticker { transform: rotate(2.4deg); }
 
 /* Slot vazio: só a moldura impressa, com a arte-d'água aparecendo atrás e o
-   mistério "???" em azul clarinho — como os quadros vazios do álbum. */
+   mistério "???" em verde clarinho — como os quadros vazios do álbum. */
 .album-slot.empty .album-sticker {
   transform: none;
   border: 0;
   box-shadow: none;
   background: transparent;
 }
-.album-slot.empty { color: #74aed0; }
-.album-slot.empty .album-icon { color: #9cc9e4; font-weight: bold; }
+.album-slot.empty { color: #5fb380; }
+.album-slot.empty .album-icon { color: #9ed4b4; font-weight: bold; }
 
 .album-icon { font-size: 34px; line-height: 1.1; letter-spacing: 2px; }
 .album-name { font-size: 14.5px; font-weight: bold; line-height: 1.1; }
@@ -369,10 +379,10 @@ const ALBUM_CSS = `
   padding-top: 4px;
   font-size: 11px;
   font-style: italic;
-  border-top: 1px dotted #86c7e6;
+  border-top: 1px dotted #8fd0a8;
 }
 
-/* Texto promocional impresso em itálico azul, torto — o "Complete do nº X ao
+/* Texto promocional impresso em itálico verde, reto — o "Complete do nº X ao
    Y com a figurinha chave e ganhe um Bicho de Pelúcia" do álbum. */
 .album-hint {
   margin: 4px auto 14px;
@@ -380,26 +390,27 @@ const ALBUM_CSS = `
   font-size: 13px;
   font-weight: bold;
   font-style: italic;
-  color: #1f7ab0;
-  transform: rotate(-1deg);
+  color: #0a7a3c;
 }
 
-/* Janela estreita: o livro "fecha" numa coluna — página esquerda em cima da
-   direita, vinco escondido, emenda das folhas no encontro das duas. */
+/* Corte PRÓPRIO de 900px além do MEDIA_COMPACT do tema: é a DOBRA do álbum —
+   abaixo disso as duas páginas lado a lado não cabem e o livro "fecha" numa
+   coluna (página esquerda em cima da direita, vinco escondido, emenda das
+   folhas no encontro das duas). */
 @media (max-width: 900px) {
   .album-book { flex-direction: column; }
   .album-book::before { display: none; }
   .album-page-left {
     border-radius: 3px 3px 0 0;
-    background: linear-gradient(180deg, #fcfeff 0%, #f4f9fc 85%, #dfeaf1 100%);
+    background: linear-gradient(180deg, #fdfdf6 0%, #f3f4e4 85%, #dfe9d6 100%);
   }
   .album-page-right {
     border-radius: 0 0 3px 3px;
-    background: linear-gradient(180deg, #dfeaf1 0%, #f4f9fc 12%, #fcfeff 100%);
+    background: linear-gradient(180deg, #dfe9d6 0%, #f3f4e4 12%, #fdfdf6 100%);
   }
 }
 
-@media (max-width: 640px), (max-height: 560px) {
+@media ${MEDIA_COMPACT} {
   .album-book { padding: 4px 4px 7px; }
   .album-page { padding: 16px 12px 32px; }
   .album-cards { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 16px 10px; }

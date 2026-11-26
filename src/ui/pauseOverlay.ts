@@ -2,7 +2,14 @@ import type { World } from '../sim/world';
 import type { GameSettings } from '../meta/settingsStore';
 import { ABILITY_DISPLAY, formatRunTime } from './hud';
 import { createSettingsSheet } from './settingsSheet';
-import { el, injectScreenThemeOnce, injectStyleOnce, INPUT_GUARD_MS } from './screens/screenTheme';
+import {
+  el,
+  injectScreenThemeOnce,
+  injectStyleOnce,
+  INPUT_GUARD_MS,
+  MEDIA_COMPACT,
+  SB_CHAMFER,
+} from './screens/screenTheme';
 
 /**
  * Menu de pausa da run (GDD 2026-11-19): Esc (ou P) congela a sim — quem
@@ -12,14 +19,16 @@ import { el, injectScreenThemeOnce, injectStyleOnce, INPUT_GUARD_MS } from './sc
  * run e Sair pro menu principal.
  *
  * CONFIGURAÇÕES (destravada em 2026-11-23): abre um sub-painel DENTRO da
- * pausa com o mesmo panfleto de ajustes do menu (ui/settingsSheet.ts) — a sim
+ * pausa com o mesmo formulário de ajustes do menu (ui/settingsSheet.ts) — a sim
  * segue congelada; volume e sensibilidade aplicam na hora via o assinante do
  * cofre. Esc/P com o sub-painel aberto volta ao menu de pausa, não retoma:
  * o integrador pergunta via `closeSettings()` antes de esconder a pausa.
  *
  * Mesmo contrato dos outros overlays: a UI lê o world e dispara ações via
  * callbacks — nunca mexe na simulação por dentro. DOM e CSS nascem aqui;
- * reutiliza as classes das telas (screenTheme) para papéis e botões.
+ * reutiliza as classes do tema de placar (screenTheme) para painéis e botões.
+ * No tema "placar esportivo BR" (2026-11-26) a pausa é o VESTIÁRIO: o build
+ * vira a prancheta do técnico, os talentos viram flâmulas.
  */
 
 export interface PauseOverlayActions {
@@ -55,17 +64,18 @@ export function createPauseOverlay(
   root.id = 'pause-overlay';
   root.setAttribute('role', 'dialog');
   root.setAttribute('aria-modal', 'true');
-  root.setAttribute('aria-label', 'Pausa');
+  root.setAttribute('aria-label', 'Vestiário (pausa)');
   root.hidden = true;
 
-  const title = el('h1', 'pause-title', 'PAUSA');
+  // Letreiro lower third do tema; o texto novo entra como escrito (contrato).
+  const title = el('h1', 'sb-title pause-title', 'VESTIÁRIO');
   const metaLine = el('p', 'pause-meta', '');
 
   // Mural do build: carta da habilidade + passivas + talentos, re-render no show.
   let build = el('div', 'pause-build', null);
 
   const column = el('div', 'menu-column pause-actions', null);
-  const resumeButton = actionButton('Continuar', 'Esc também continua', () => {
+  const resumeButton = actionButton('Voltar pro jogo', 'Esc também volta', () => {
     if (performance.now() < acceptInputAt) return;
     actions.resume();
   });
@@ -78,19 +88,19 @@ export function createPauseOverlay(
   });
   settingsButton.id = 'pause-settings-btn';
 
-  const endRunButton = actionButton('Finalizar run', 'fecha a conta e mostra o resumo', () => {
+  const endRunButton = actionButton('Apitar o fim', 'fecha a conta e mostra a súmula', () => {
     if (performance.now() < acceptInputAt) return;
     actions.endRun();
   });
   endRunButton.id = 'pause-end-run';
 
-  const exitButton = actionButton('Sair pro menu principal', 'as bananas vão pro cofre', () => {
+  const exitButton = actionButton('Sair do estádio', 'as bananas vão pro cofre', () => {
     if (performance.now() < acceptInputAt) return;
     actions.exitToMenu();
   });
   exitButton.id = 'pause-exit-menu';
 
-  // Sub-painel de configurações: o panfleto compartilhado + Voltar. Vive
+  // Sub-painel de configurações: o formulário compartilhado + Voltar. Vive
   // escondido; abrir troca o mural/ações por ele (a pausa continua uma só).
   const settingsSheet = createSettingsSheet(settings, 'pause-settings');
   const settingsBackButton = actionButton('Voltar', 'Esc também volta', () => {
@@ -122,7 +132,7 @@ export function createPauseOverlay(
   /** Volta ao menu de pausa. `focus` falso no hide(): overlay já está saindo. */
   function closeSettingsView(focus = true): void {
     settingsOpen = false;
-    title.textContent = 'PAUSA';
+    title.textContent = 'VESTIÁRIO';
     build.hidden = false;
     column.hidden = false;
     settingsView.hidden = true;
@@ -151,7 +161,7 @@ export function createPauseOverlay(
           `alcance ${formatNumber(world.stats.abilityRange)} u`,
       ),
     );
-    next.append(labeled('Habilidade', skill));
+    next.append(labeled('Jogada ensaiada', skill));
 
     // --- Passivas da run (melhorias com efeito contínuo e stack > 0). -------
     const passives = el('div', 'pause-passives', null);
@@ -173,10 +183,10 @@ export function createPauseOverlay(
     }
     if (passiveCount === 0) {
       passives.append(
-        el('p', 'pause-empty', 'Nenhuma passiva ainda — sobe de nível que os panfletos chegam.'),
+        el('p', 'pause-empty', 'Nenhuma passiva ainda — sobe de nível que o mercado abre.'),
       );
     }
-    next.append(labeled(`Passivas da run (${passiveCount})`, passives));
+    next.append(labeled(`Entrosamento da partida (${passiveCount})`, passives));
 
     // --- Talentos da loja (permanentes), só se houver algum comprado. -------
     const talentItems: HTMLElement[] = [];
@@ -191,7 +201,7 @@ export function createPauseOverlay(
     if (talentItems.length > 0) {
       const talents = el('div', 'pause-talents', null);
       talents.append(...talentItems);
-      next.append(labeled('Talentos da loja (valem sempre)', talents));
+      next.append(labeled('Elenco permanente (loja)', talents));
     }
 
     build.replaceWith(next);
@@ -231,7 +241,7 @@ export function createPauseOverlay(
   };
 }
 
-/** Botão estilo panfleto (classes do screenTheme) com rótulo + sublinha. */
+/** Botão de placar (classes do screenTheme) com rótulo + sublinha. */
 function actionButton(label: string, sub: string, onClick: () => void): HTMLButtonElement {
   const button = document.createElement('button');
   button.type = 'button';
@@ -253,26 +263,25 @@ function formatNumber(value: number): string {
   return (Math.round(value * 10) / 10).toString().replace('.', ',');
 }
 
-const PAUSE_CSS = `
-#pause-overlay {
-  /* Conjunto COMPLETO das variáveis que as classes reutilizadas do
-     screenTheme consomem (.screen-card, .locked, .card-stamp, .denied):
-     elas são definidas em #screens, que não é ancestral deste overlay. */
-  --ui-dim: rgba(10, 8, 14, 0.82);
-  --ui-text: #e8e4da;
-  --ui-ink: #26180b;
-  --ui-paper-0: #fff3b0;
-  --ui-paper-1: #ffd6ec;
-  --ui-paper-2: #d2f4ff;
-  --ui-paper-locked: #cfcabc;
-  --ui-ink-locked: #4a443a;
-  --ui-promo: #e8231a;
-  --ui-promo-ink: #fffbe6;
-  --ui-accent: #ffe066;
-  --ui-shadow: #2a1016;
-  --ui-staple: #b9b9b9;
-  --ui-gap: 16px;
+/**
+ * Regras do modo compacto, compartilhadas entre o breakpoint do tema e o
+ * corte PRÓPRIO de altura da pausa (ver os dois @media no fim do CSS): a
+ * prancheta do build + a coluna de 4 botões são altas, então a pausa precisa
+ * encolher ANTES do corte global de 560px de altura.
+ */
+const PAUSE_COMPACT_RULES = `
+  #pause-overlay { justify-content: flex-start; padding-top: 20px; }
+  #pause-overlay .pause-title { font-size: 24px; padding: 8px 18px 9px; }
+  .pause-build { padding: 12px 12px 10px; }
+  .pause-actions { gap: 6px; }
+  .pause-actions .menu-btn { padding: 5px 12px 4px; }
+  .pause-actions .menu-btn .card-name { font-size: 14px; }
+  #pause-resume .card-name { font-size: 17px; }
+`;
 
+const PAUSE_CSS = `
+/* Tokens --ui-* vêm do :root (src/theme/tokens.ts, injetado no boot). */
+#pause-overlay {
   position: fixed;
   inset: 0;
   z-index: 10;
@@ -283,88 +292,128 @@ const PAUSE_CSS = `
   gap: var(--ui-gap);
   padding: calc(var(--ui-gap) * 1.5);
   overflow: auto;
-  background: var(--ui-dim);
+  /* Escurecida de transmissão sobre o jogo parado (tom do --ui-bg-0; o
+     translúcido não tem token — mesma receita do upgradeOverlay). */
+  background: rgba(8, 11, 17, 0.8);
   color: var(--ui-text);
   text-align: center;
 }
 #pause-overlay[hidden] { display: none; }
 
-.pause-title {
-  margin: 0;
-  font-size: clamp(26px, 5vw, 44px);
-  color: var(--ui-accent);
-  transform: rotate(-2deg);
-  text-shadow: 3px 3px 0 var(--ui-shadow);
-}
-.pause-meta { margin: 0; font-size: 16px; }
+/* Letreiro: a base vem de .sb-title; aqui só o teto de tamanho local
+   (a pausa tem mais conteúdo embaixo que uma tela de menu). */
+#pause-overlay .pause-title { font-size: clamp(24px, 4.5vw, 38px); }
 
-/* Mural do build: papel grande com as seções (habilidade/passivas/talentos). */
+/* Linha meta da run: chip do VAR (o CONTEÚDO não muda, só o visual).
+   Caixa alta via CSS — o texto/dados seguem como vieram do world. */
+.pause-meta {
+  margin: 0;
+  padding: 4px 14px 5px;
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
+  background: var(--ui-yellow);
+  color: var(--ui-ink);
+  border-left: 4px solid var(--ui-green);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+}
+
+/* Prancheta do técnico: painel de placar com as seções do build dentro. */
 .pause-build {
   position: relative;
   width: min(640px, 92vw);
-  padding: 14px 18px 16px;
-  background: var(--ui-paper-0);
-  color: var(--ui-ink);
-  border: 2px solid rgba(0, 0, 0, 0.35);
-  border-radius: 2px;
-  box-shadow: 4px 6px 0 rgba(0, 0, 0, 0.45);
-  transform: rotate(-0.8deg);
+  padding: 18px 18px 16px; /* topo maior: a fita BR ocupa 6px */
+  background: var(--ui-panel);
+  color: var(--ui-text);
+  border: 1px solid var(--ui-edge);
+  border-left: 5px solid var(--ui-yellow);
+  clip-path: ${SB_CHAMFER};
   text-align: left;
 }
-.pause-build::before { /* grampo, como nos demais papéis */
+.pause-build::before { /* fita BR no topo (a ex-posição do grampo) */
   content: '';
   position: absolute;
-  top: -5px;
-  left: 50%;
-  width: 26px;
-  height: 8px;
-  background: #b9b9b9;
-  border: 1px solid rgba(0, 0, 0, 0.5);
-  border-radius: 2px;
-  transform: translateX(-50%) rotate(-2deg);
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: var(--ui-stripe);
+  pointer-events: none;
 }
 .pause-section + .pause-section {
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 2px dashed rgba(0, 0, 0, 0.3);
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ui-edge);
 }
 .pause-section-label {
   margin: 0 0 6px;
-  font-size: 12px;
-  font-weight: bold;
-  letter-spacing: 1px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  opacity: 0.7;
+  color: var(--ui-text-dim);
 }
 
-.pause-skill { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+/* Linha da habilidade: primeira linha do placar (fundo de zebra destacado). */
+.pause-skill {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  background: var(--ui-panel-2);
+}
 .pause-skill-icon { font-size: 26px; line-height: 1; }
-.pause-skill-name { font-size: 18px; font-weight: bold; }
-.pause-skill-stats { font-size: 14px; opacity: 0.85; }
+.pause-skill-name {
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.pause-skill-stats {
+  font-size: 14px;
+  color: var(--ui-text-dim);
+  font-variant-numeric: tabular-nums;
+}
 
 .pause-passives {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 6px 14px;
+  gap: 4px 10px;
 }
-.pause-passive { display: flex; flex-direction: column; }
-.pause-passive-head { font-size: 14px; font-weight: bold; line-height: 1.2; }
-.pause-passive-line { font-size: 12px; opacity: 0.8; line-height: 1.2; }
-.pause-empty { margin: 0; font-size: 14px; opacity: 0.8; }
+/* Itens em zebra: alternância --ui-panel/--ui-panel-2 (linhas de tabela). */
+.pause-passive {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 10px 5px;
+}
+.pause-passive:nth-child(odd) { background: var(--ui-panel-2); }
+.pause-passive-head {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+.pause-passive-line { font-size: 12.5px; color: var(--ui-text-dim); line-height: 1.25; }
+.pause-empty { margin: 0; font-size: 14px; color: var(--ui-text-dim); }
 
+/* Talentos da loja: flâmulas de bandeirinha (valem sempre = títulos do clube). */
 .pause-talents { display: flex; flex-wrap: wrap; gap: 6px; }
 .pause-talent {
-  padding: 2px 10px;
-  background: var(--ui-paper-2);
-  border: 2px solid rgba(0, 0, 0, 0.3);
-  border-radius: 999px;
+  padding: 4px 20px 4px 10px;
+  background: var(--ui-yellow);
+  color: var(--ui-ink);
   font-size: 13px;
-  font-weight: bold;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-variant-numeric: tabular-nums;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%);
 }
-.pause-talents .pause-talent:nth-child(odd) { transform: rotate(-1.5deg); }
-.pause-talents .pause-talent:nth-child(even) { transform: rotate(1.2deg); }
 
-/* Sub-painel de configurações: panfleto compartilhado + Voltar, no lugar do
+/* Sub-painel de configurações: formulário compartilhado + Voltar, no lugar do
    mural/ações (hidden precisa vencer o display:flex da classe). */
 .pause-settings {
   display: flex;
@@ -382,18 +431,13 @@ const PAUSE_CSS = `
 .pause-actions .menu-btn .card-name { font-size: 17px; }
 #pause-resume .card-name { font-size: 22px; }
 
-/* Janela baixa: mural e botões encolhem para caber sem rolagem na maioria. */
-@media (max-width: 640px), (max-height: 640px) {
-  #pause-overlay { justify-content: flex-start; padding-top: 20px; }
-  .pause-title { font-size: 24px; }
-  .pause-build { padding: 10px 12px; }
-  .pause-actions { gap: 6px; }
-  .pause-actions .menu-btn { padding: 5px 12px 4px; }
-  .pause-actions .menu-btn .card-name { font-size: 14px; }
-  #pause-resume .card-name { font-size: 17px; }
+/* Breakpoint compacto compartilhado do tema (janela estreita OU baixa). */
+@media ${MEDIA_COMPACT} {
+${PAUSE_COMPACT_RULES}
 }
-
-@media (prefers-reduced-motion: reduce) {
-  #pause-overlay * { animation: none !important; transition: none !important; }
+/* Corte PRÓPRIO de altura (640px > os 560px do tema): o mural do build é
+   alto — prancheta + 4 botões estouram a janela antes do corte global. */
+@media (max-height: 640px) {
+${PAUSE_COMPACT_RULES}
 }
 `;
