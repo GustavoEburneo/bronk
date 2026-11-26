@@ -5,6 +5,12 @@ export interface CameraLook {
 }
 
 export interface MouseLook extends CameraLook {
+  /**
+   * Aplica um delta de olhar em PIXELS vindo de outra fonte de entrada (o
+   * arrasto de toque do celular — ver ui/touchControls): mesma sensibilidade,
+   * mesma inversão e mesmo clamp de pitch do mouse, sem exigir pointer lock.
+   */
+  nudge(deltaX: number, deltaY: number): void;
   /** Solta o ponteiro (ex.: ao abrir a tela de morte, que precisa de clique). */
   unlock(): void;
   /**
@@ -75,6 +81,16 @@ export function createMouseLook(canvas: HTMLCanvasElement): MouseLook {
     }
   };
 
+  // Caminho único de aplicação de delta (mouse e toque): mesma sensibilidade,
+  // mesma inversão e mesmo clamp de pitch.
+  const applyDelta = (deltaX: number, deltaY: number): void => {
+    yaw -= deltaX * sensitivity;
+    // Vertical invertida: mouse para cima abaixa a câmera, mirando o céu.
+    pitch += deltaY * sensitivity;
+    if (pitch < MIN_PITCH) pitch = MIN_PITCH;
+    if (pitch > MAX_PITCH) pitch = MAX_PITCH;
+  };
+
   const onMouseMove = (event: MouseEvent): void => {
     if (document.pointerLockElement !== canvas) return;
     if (suppressEvents > 0) {
@@ -86,11 +102,7 @@ export function createMouseLook(canvas: HTMLCanvasElement): MouseLook {
     if (Math.abs(event.movementX) > MAX_EVENT_DELTA || Math.abs(event.movementY) > MAX_EVENT_DELTA) {
       return;
     }
-    yaw -= event.movementX * sensitivity;
-    // Vertical invertida: mouse para cima abaixa a câmera, mirando o céu.
-    pitch += event.movementY * sensitivity;
-    if (pitch < MIN_PITCH) pitch = MIN_PITCH;
-    if (pitch > MAX_PITCH) pitch = MAX_PITCH;
+    applyDelta(event.movementX, event.movementY);
   };
 
   canvas.addEventListener('click', onClick);
@@ -103,6 +115,10 @@ export function createMouseLook(canvas: HTMLCanvasElement): MouseLook {
     },
     get pitch(): number {
       return pitch;
+    },
+    nudge(deltaX: number, deltaY: number): void {
+      if (!Number.isFinite(deltaX) || !Number.isFinite(deltaY)) return;
+      applyDelta(deltaX, deltaY);
     },
     lock(): void {
       onClick();

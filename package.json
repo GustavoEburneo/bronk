@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify:headless": "node tools/verify/headless.mjs"
+    "verify:headless": "node tools/verify/headless.mjs",
+    "verify:touch": "node tools/verify/touch.mjs"
   },
   "dependencies": {
     "@fontsource/barlow-condensed": "^5.3.0",

@@ -26,6 +26,7 @@ import { createHud } from './ui/hud';
 import { createDeathOverlay } from './ui/deathOverlay';
 import { createUpgradeOverlay } from './ui/upgradeOverlay';
 import { createPauseOverlay } from './ui/pauseOverlay';
+import { createTouchControls } from './ui/touchControls';
 import type { ScreenFlowEntry } from './ui/screens/screenFlow';
 import { createScreenFlow } from './ui/screens/screenFlow';
 import type { RunRecord } from './meta/metaStore';
@@ -196,16 +197,15 @@ const pauseOverlay = createPauseOverlay({
   },
 }, settings);
 
-// Esc (ou P) alterna a pausa — só com a run rodando e sem outro overlay por
-// cima: na escolha de melhoria a sim já está pausada, e no fim de run os
-// botões de lá mandam. Obs.: com o ponteiro travado, o navegador consome o
-// primeiro Esc para soltar o lock; o segundo pausa (P pausa de primeira).
-window.addEventListener('keydown', (event) => {
-  if (event.repeat || event.ctrlKey || event.altKey || event.metaKey) return;
-  if (event.code !== 'Escape' && event.code !== 'KeyP') return;
-  if (appState !== 'match' || world === null) return;
-  if (world.status !== 'running' || world.upgradeChoice !== null || overlay.visible) return;
-  event.preventDefault();
+/**
+ * Alterna a pausa — só com a run rodando e sem outro overlay por cima: na
+ * escolha de melhoria a sim já está pausada, e no fim de run os botões de lá
+ * mandam. Compartilhado entre Esc/P e o botão de pausa do toque (celular).
+ * Devolve se agiu (o keydown só faz preventDefault quando sim).
+ */
+function togglePause(): boolean {
+  if (appState !== 'match' || world === null) return false;
+  if (world.status !== 'running' || world.upgradeChoice !== null || overlay.visible) return false;
   if (pauseOverlay.visible) {
     // Esc/P dentro das CONFIGURAÇÕES da pausa volta ao menu de pausa; só o
     // próximo Esc/P (já no menu) retoma o jogo.
@@ -215,6 +215,26 @@ window.addEventListener('keydown', (event) => {
     mouseLook.unlock();
     pauseOverlay.show(world);
   }
+  return true;
+}
+
+// Obs.: com o ponteiro travado, o navegador consome o primeiro Esc para
+// soltar o lock; o segundo pausa (P pausa de primeira).
+window.addEventListener('keydown', (event) => {
+  if (event.repeat || event.ctrlKey || event.altKey || event.metaKey) return;
+  if (event.code !== 'Escape' && event.code !== 'KeyP') return;
+  if (togglePause()) event.preventDefault();
+});
+
+// Controles de TOQUE (celular): joystick + arrasto de câmera no canvas e
+// botões de pulo/pausa na camada da HUD (somem com ela no menu). Criar sempre
+// é inofensivo: os listeners filtram pointerType 'touch' e os botões só
+// aparecem em (pointer: coarse). Vida do APP, como teclado e mouse.
+const touch = createTouchControls(canvas, hudElement, {
+  nudgeLook: (deltaX, deltaY) => mouseLook.nudge(deltaX, deltaY),
+  togglePause: () => {
+    togglePause();
+  },
 });
 
 // Boot: com ?personagem= válido pula as telas (ver Overrides); senão, menu.
@@ -249,7 +269,9 @@ function startMatch(picked: MatchSelection): void {
 
   loop = startGameLoop({
     getWorld: () => requireWorld(),
-    sampleInput: () => rotateFrameToCamera(input.sample(), mouseLook.yaw),
+    // Teclado + toque mesclados (joystick vence quando ativo; pulo é OR),
+    // depois rotacionados pelo yaw da câmera — um caminho só de entrada.
+    sampleInput: () => rotateFrameToCamera(touch.merge(input.sample()), mouseLook.yaw),
     draw: (currentWorld, alpha, frameDt) => renderer.draw(currentWorld, alpha, frameDt),
     perf,
     // Menu de pausa aberto: a sim congela como na escolha de melhoria.

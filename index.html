@@ -2,7 +2,12 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Celular (2026-11-26): sem zoom de pinça/duplo toque (o jogo controla a
+         câmera por arrasto) e ocupando a tela inteira até atrás do notch. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
     <title>BRonk — POC</title>
     <style>
       :root {
@@ -13,6 +18,10 @@
         margin: 0;
         height: 100%;
         overflow: hidden;
+        /* Celular: nada de scroll elástico/pull-to-refresh nem realce azul de
+           toque — o jogo trata o toque como controle, não como navegação. */
+        overscroll-behavior: none;
+        -webkit-tap-highlight-color: transparent;
         background: #0c1118; /* --ui-bg-0 (tokens em src/theme/tokens.ts) */
         /* Barlow Condensed EMBARCADA via @fontsource no main.ts (decisão
            2026-11-26, tema "placar esportivo BR" — substitui a Comic Sans do
@@ -28,6 +37,13 @@
         height: 100%;
         /* O render interno é minúsculo; o upscale serrilhado é o visual do jogo. */
         image-rendering: pixelated;
+        /* Toque no canvas é joystick/câmera (ui/touchControls), nunca scroll/zoom. */
+        touch-action: none;
+      }
+      /* HUD por cima do jogo: segurar o dedo não pode selecionar texto (iOS). */
+      #hud {
+        -webkit-user-select: none;
+        user-select: none;
       }
       /* Camada da HUD da run: o conteúdo e o estilo nascem em src/ui/hud.ts
          (mesmo padrão dos overlays). Aqui só a camada em si. */

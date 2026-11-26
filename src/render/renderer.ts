@@ -129,11 +129,16 @@ export function createRenderer(canvas: HTMLCanvasElement, options: RendererOptio
 
   let match: MatchScene | null = null;
 
+  // Tela de toque (celular/tablet): teto de altura interna menor — a GPU de
+  // celular não segura 1080p com antialias, e no tamanho físico da tela a
+  // nitidez extra não aparece. ?res= segue mandando em qualquer aparelho.
+  const maxRenderHeight = window.matchMedia('(pointer: coarse)').matches ? 720 : 1080;
+
   const applySize = (): void => {
-    // Sem override: resolução nativa da janela (teto 1080 — acima disso o
-    // custo não compra nitidez perceptível no estilo do jogo).
+    // Sem override: resolução nativa da janela (teto acima — o custo além
+    // dele não compra nitidez perceptível no estilo do jogo).
     const targetHeight =
-      options.renderHeight > 0 ? options.renderHeight : Math.min(window.innerHeight, 1080);
+      options.renderHeight > 0 ? options.renderHeight : Math.min(window.innerHeight, maxRenderHeight);
     const height = Math.max(90, Math.round(targetHeight));
     const width = Math.max(160, Math.round((window.innerWidth / window.innerHeight) * height));
     // updateStyle=false: o CSS mantém o canvas em tela cheia e faz o upscale.
